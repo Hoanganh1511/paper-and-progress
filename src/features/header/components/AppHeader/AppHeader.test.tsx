@@ -41,13 +41,11 @@ describe("AppHeader", () => {
       setup();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       expect(
-        within(nav)
-          .getAllByRole("link")
-          .map((link) => [link.textContent, link.getAttribute("href")]),
-      ).toEqual([
-        ["Học tập", "/learn"],
-        ["Mục tiêu tiếng Anh", "/goals/english"],
-      ]);
+        within(nav).getByRole("link", { name: "Học tập" }),
+      ).toHaveAttribute("href", "/learn");
+      expect(
+        within(nav).getByRole("link", { name: "Công nghệ thông tin" }),
+      ).toHaveAttribute("href", "/goals/tech");
     });
 
     it("marks the current page, including deeper paths of a section", () => {
@@ -58,21 +56,21 @@ describe("AppHeader", () => {
         "page",
       );
       expect(
-        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
+        screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).not.toHaveAttribute("aria-current");
       unmount();
 
-      pathname.current = "/goals/english/ielts";
+      pathname.current = "/goals/tech/react";
       setup();
       expect(
-        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
+        screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).toHaveAttribute("aria-current", "page");
       expect(screen.getByRole("link", { name: "Học tập" })).not.toHaveAttribute(
         "aria-current",
       );
     });
 
-    it("takes custom items and leaves the bar out when empty", () => {
+    it("takes custom items; the goals and call-to-action links stay even when empty", () => {
       const { unmount } = setup({
         navItems: [{ label: "Từ điển", href: "/dictionary" }],
       });
@@ -81,8 +79,18 @@ describe("AppHeader", () => {
         "/dictionary",
       );
       unmount();
+
       setup({ navItems: [] });
-      expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
+      expect(
+        within(nav).getByRole("link", { name: "Mục tiêu tiếng Anh" }),
+      ).toBeInTheDocument();
+      expect(
+        within(nav).getByRole("link", { name: /学习从这里开始~/ }),
+      ).toBeInTheDocument();
+      expect(
+        within(nav).queryByRole("link", { name: "Từ điển" }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -102,6 +110,40 @@ describe("AppHeader", () => {
         "href",
         "/home",
       );
+    });
+  });
+
+  describe("goals button", () => {
+    afterEach(() => {
+      pathname.current = "/";
+    });
+
+    it("is a highlighted link to the English goals page, in the nav bar", () => {
+      setup();
+      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
+      const link = within(nav).getByRole("link", {
+        name: "Mục tiêu tiếng Anh",
+      });
+      expect(link).toHaveAttribute("href", "/goals/english");
+      expect(link).toHaveClass("bg-accent-pink");
+      expect(link.querySelector("svg")).toHaveClass("lucide-graduation-cap");
+      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(link).not.toHaveAttribute("aria-current");
+    });
+
+    it("marks itself current on the goals page and its subpaths", () => {
+      pathname.current = "/goals/english/ielts";
+      setup();
+      expect(
+        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
+      ).toHaveAttribute("aria-current", "page");
+    });
+
+    it("can point elsewhere", () => {
+      setup({ goalsHref: "/goals/en" });
+      expect(
+        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
+      ).toHaveAttribute("href", "/goals/en");
     });
   });
 
@@ -137,9 +179,10 @@ describe("AppHeader", () => {
       expect(screen.getByRole("search")).toHaveAttribute("action", "/tu-dien");
     });
 
-    it("has a call to action that links to the learning page", () => {
+    it("has a call to action that links to the learning page, in the nav bar", () => {
       setup();
-      const link = screen.getByRole("link", { name: /学习从这里开始~/ });
+      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
+      const link = within(nav).getByRole("link", { name: /学习从这里开始~/ });
       expect(link).toHaveAttribute("href", "/learn");
       // The arrow and the heart are decorative and left out of the name.
       expect(link).toHaveAccessibleName(
@@ -148,16 +191,16 @@ describe("AppHeader", () => {
       expect(link.querySelector('[lang="zh-Hans"]')).toHaveTextContent(
         "学习从这里开始~",
       );
+      expect(link).toHaveClass("bg-accent-lime");
     });
 
-    it("hides the decorative arrow and heart, and shows the call to action from lg", () => {
+    it("hides the decorative arrow and heart from its accessible name", () => {
       setup();
       const link = screen.getByRole("link", { name: /学习从这里开始~/ });
       const hidden = Array.from(
         link.querySelectorAll('[aria-hidden="true"]'),
       ).map((element) => element.textContent);
       expect(hidden).toEqual(["→", "♡"]);
-      expect(link).toHaveClass("hidden", "lg:inline-flex", "bg-accent-lime");
     });
 
     it("can lead elsewhere", () => {
@@ -488,7 +531,6 @@ describe("AppHeader", () => {
     const order = [
       /^Baolingo$/,
       /^Từ điển$/,
-      /^学习从这里开始~/,
       /^Facebook Community/,
       /^Chế độ tối$/,
       /^Ngôn ngữ: Tiếng Việt$/,

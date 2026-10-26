@@ -9,7 +9,15 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Check, ChevronDown, Moon, Sun, Zap } from "lucide-react";
+import {
+  Bell,
+  Check,
+  ChevronDown,
+  GraduationCap,
+  Moon,
+  Sun,
+  Zap,
+} from "lucide-react";
 import {
   Badge,
   Button,
@@ -48,7 +56,7 @@ export interface HeaderNavItem {
 
 export const defaultHeaderNavItems: HeaderNavItem[] = [
   { label: "Học tập", href: "/learn" },
-  { label: "Mục tiêu tiếng Anh", href: "/goals/english", isSection: true },
+  { label: "Công nghệ thông tin", href: "/goals/tech", isSection: true },
 ];
 
 export interface AppHeaderLabels {
@@ -56,6 +64,8 @@ export interface AppHeaderLabels {
   /** Accessible name of the page navigation. */
   navigation: string;
   dictionary: string;
+  /** Visible text of the highlighted link to the English goals page. */
+  goals: string;
   /** Visible text of the call to action. */
   start: string;
   /** Language of `start`, e.g. "zh-Hans". */
@@ -80,6 +90,7 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   brand: "Baolingo",
   navigation: "Điều hướng chính",
   dictionary: "Từ điển",
+  goals: "Mục tiêu tiếng Anh",
   start: "学习从这里开始~",
   startLang: "zh-Hans",
   startMeaning: "Bắt đầu học từ đây",
@@ -112,6 +123,8 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   brandHref?: string;
   /** Where the dictionary search goes (a plain GET form, `?q=...`). */
   searchAction?: string;
+  /** Where the highlighted goals button leads: the English goals page. */
+  goalsHref?: string;
   /** Where the call to action leads: the learning page. */
   learnHref?: string;
   /** Facebook community page; the link is left out when omitted. */
@@ -150,19 +163,22 @@ const fill = (template: string, count: number) =>
  * The top bar of the learning app.
  *
  * - Left: the panda logo and the name.
- * - Middle: the dictionary search and the "start learning" call to action.
+ * - Middle: the dictionary search.
  * - Right: Facebook community, dark mode, language, notifications, score and
  *   profile.
+ * - Below that: a scrollable bar with the highlighted English goals button,
+ *   the "start learning" call to action, and the page nav links.
  *
- * Below `md` it wraps to two rows: the logo with the notification, score and
- * profile on the first, the search with the community, theme and language
- * controls on the second. The call to action appears from `lg`. It is a
- * client component, but every prop is plain data, so a Server Component
- * layout can render it.
+ * Below `md` the main row wraps to two lines: the logo with the
+ * notification, score and profile on the first, the search with the
+ * community, theme and language controls on the second. It is a client
+ * component, but every prop is plain data, so a Server Component layout can
+ * render it.
  */
 export function AppHeader({
   brandHref = "/",
   searchAction = "/dictionary",
+  goalsHref = "/goals/english",
   learnHref = "/learn",
   facebookHref,
   notificationsHref = "/notifications",
@@ -192,6 +208,8 @@ export function AppHeader({
     languages.find((option) => option.code === languageCode) ?? languages[0];
   const hasUnread = unreadNotifications > 0;
   const hasBadge = profileBadge !== undefined && profileBadge > 0;
+  const isGoalsCurrent =
+    pathname === goalsHref || !!pathname?.startsWith(`${goalsHref}/`);
 
   // Publish the header's height (it changes when the layout wraps) while it
   // is sticky, so the bars beneath it know where to stick.
@@ -265,17 +283,6 @@ export function AppHeader({
                 autoComplete="off"
               />
             </form>
-
-            <LinkButton
-              href={learnHref}
-              variant="accent"
-              className="hidden md:order-3 lg:inline-flex"
-            >
-              <span aria-hidden="true">→</span>
-              <span lang={labels.startLang}>{labels.start}</span>
-              <span aria-hidden="true">♡</span>
-              <span className="sr-only">{`(${labels.startMeaning})`}</span>
-            </LinkButton>
 
             <div className="flex items-center gap-1 md:order-4 md:ml-auto">
               {facebookHref && (
@@ -394,32 +401,51 @@ export function AppHeader({
             </a>
           </div>
         </div>
-        {navItems.length > 0 && (
-          <nav
-            aria-label={labels.navigation}
-            className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2"
+        <nav
+          aria-label={labels.navigation}
+          className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-2"
+        >
+          <LinkButton
+            href={goalsHref}
+            variant="accent"
+            leftIcon={GraduationCap}
+            aria-current={isGoalsCurrent ? "page" : undefined}
+            className={cn(
+              "shrink-0 bg-accent-pink",
+              isGoalsCurrent &&
+                "ring-2 ring-ink ring-offset-2 ring-offset-surface-page",
+            )}
           >
-            {navItems.map((item) => {
-              const isCurrent =
-                pathname === item.href ||
-                (item.isSection && !!pathname?.startsWith(`${item.href}/`));
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isCurrent ? "page" : undefined}
-                  className={cn(
-                    "relative inline-flex min-h-11 shrink-0 items-center rounded-pill px-4 text-body-md font-medium text-text-secondary hover:bg-surface-sunken hover:text-text-primary",
-                    "aria-[current=page]:bg-accent-lime aria-[current=page]:font-semibold aria-[current=page]:text-ink",
-                    focusRingClasses,
-                  )}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </nav>
-        )}
+            {labels.goals}
+          </LinkButton>
+
+          <LinkButton href={learnHref} variant="accent" className="shrink-0">
+            <span aria-hidden="true">→</span>
+            <span lang={labels.startLang}>{labels.start}</span>
+            <span aria-hidden="true">♡</span>
+            <span className="sr-only">{`(${labels.startMeaning})`}</span>
+          </LinkButton>
+
+          {navItems.map((item) => {
+            const isCurrent =
+              pathname === item.href ||
+              (item.isSection && !!pathname?.startsWith(`${item.href}/`));
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                aria-current={isCurrent ? "page" : undefined}
+                className={cn(
+                  "relative inline-flex min-h-11 shrink-0 items-center rounded-pill px-4 text-body-md font-medium text-text-secondary hover:bg-surface-sunken hover:text-text-primary",
+                  "aria-[current=page]:bg-accent-lime aria-[current=page]:font-semibold aria-[current=page]:text-ink",
+                  focusRingClasses,
+                )}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
       </Container>
     </header>
   );
