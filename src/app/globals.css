@@ -1,26 +1,249 @@
+/* Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap");
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* == DESIGN TOKENS via @theme == */
+/* Tailwind v4: @theme replaces tailwind.config.js */
+/* Tokens defined here become both CSS variables AND Tailwind utilities */
+/* e.g. --color-ink -> bg-ink -> text-ink -> border-ink */
+@theme {
+  /* Color palette */
+  --color-ink: #171717;
+  --color-paper: #f0eee9;
+  --color-surface: #ffffff;
+  --color-muted: #737373;
+
+  /* Accents */
+  --color-accent-lime: #d8f75a;
+  --color-accent-pink: #ff9ccb;
+  --color-accent-yellow: #ffd56a;
+  --color-accent-blue: #8caeff;
+
+  /* Feedback */
+  --color-success-bg: #e5f5d8;
+  --color-success-text: #28642f;
+  --color-warning-bg: #fff0c2;
+  --color-warning-text: #795400;
+  --color-danger-bg: #fbe1e0;
+  --color-danger-text: #a32323;
+  --color-info-bg: #e3ecff;
+  --color-info-text: #214e9a;
+
+  /* Illustrated card themes: a saturated card color and a darker one for its
+     badge. White text on both meets 4.5:1 (checked by globals.test.ts). They
+     stay the same in dark mode. */
+  --color-theme-blue: #2563eb;
+  --color-theme-blue-strong: #1e40af;
+  --color-theme-green: #15803d;
+  --color-theme-green-strong: #14532d;
+  --color-theme-orange: #b45309;
+  --color-theme-orange-strong: #78350f;
+  --color-theme-pink: #be185d;
+  --color-theme-pink-strong: #831843;
+  --color-theme-purple: #7e22ce;
+  --color-theme-purple-strong: #581c87;
+
+  /* Semantic surfaces */
+  --color-surface-page: #f0eee9;
+  --color-surface-card: #ffffff;
+  --color-surface-overlay: #ffffff;
+  --color-surface-sunken: #e5e2da;
+
+  /* Semantic text */
+  --color-text-primary: #171717;
+  --color-text-secondary: #525252;
+  --color-text-muted: #737373;
+  --color-text-disabled: #a3a3a3;
+  --color-text-inverse: #f8f7f2;
+
+  /* Semantic borders */
+  --color-border-default: #d6d6d0;
+  --color-border-subtle: #e5e5e0;
+  --color-border-strong: #171717;
+  --color-border-focus: #8caeff;
+
+  /* Semantic actions */
+  --color-action-primary: #171717;
+  --color-action-primary-hover: #2e2e2e;
+  --color-action-primary-active: #404040;
+  --color-action-disabled: #d4d4d4;
+
+  /* Overlay */
+  --color-overlay-backdrop: rgba(23, 23, 23, 0.5);
+
+  /* Typography-font families */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-handwritten: "Caveat", cursive;
+
+  /* Typography scale */
+  --text-display-xl: 3.5rem;
+  --text-display-lg: 3rem;
+  --text-heading-xl: 2.25rem;
+  --text-heading-lg: 1.75rem;
+  --text-heading-md: 1.375rem;
+  --text-heading-sm: 1.125rem;
+  --text-body-lg: 1rem;
+  --text-body-md: 0.875rem;
+  --text-body-sm: 0.8125rem;
+  --text-caption: 0.75rem;
+  --text-overline: 0.6875rem;
+
+  /* Spacing */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-5: 1.25rem; /* 20px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-24: 6rem; /* 96px */
+
+  /* Container widths */
+  --width-container-narrow: 40rem;
+  --width-container-default: 64rem;
+  --width-container-wide: 80rem;
+
+  /* Height-compact */
+  --height-compact: 2rem;
+  --height-default: 2.5rem;
+  --height-comfortable: 3rem;
+
+  /* Radius */
+  --radius-sharp: 4px;
+  --radius-standard: 8px;
+  --radius-soft: 16px;
+  --radius-pill: 9999px;
+
+  /* Elevation / shadows */
+  --shadow-flat: none;
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-floating: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-accent: 4px 4px 0 #171717;
+
+  /* Z-index layers */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* motion */
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 320ms;
+  --ease-default: ease-out;
+  --ease-in-out: ease-in-out;
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ===== DARK MODE ===== */
+/* Tailwind v4: override @theme CSS variables via .dark selector */
+/* Works with next-themes adding class="dark" to <html> */
+.dark {
+  color-scheme: dark;
+
+  --color-paper: #1a1a1a;
+  --color-surface: #262626;
+  --color-muted: #a3a3a3;
+  --color-border-subtle: #404040;
+
+  --color-surface-page: #1a1a1a;
+  --color-surface-card: #262626;
+  --color-surface-overlay: #303030;
+  --color-surface-sunken: #141414;
+
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #d4d4d4;
+  --color-text-muted: #a3a3a3;
+  --color-text-disabled: #525252;
+  --color-text-inverse: #171717;
+
+  --color-border-default: #404040;
+  --color-border-subtle: #333333;
+  --color-border-strong: #e5e5e5;
+
+  --color-action-primary: #f5f5f5;
+  --color-action-primary-hover: #e5e5e5;
+  --color-action-primary-active: #d4d4d4;
+  --color-action-disabled: #404040;
+
+  --color-success-bg: #1a3a1a;
+  --color-success-text: #86efac;
+  --color-warning-bg: #3d2e00;
+  --color-warning-text: #fde68a;
+  --color-danger-bg: #3d1a1a;
+  --color-danger-text: #fca5a5;
+  --color-info-bg: #1a2a4a;
+  --color-info-text: #93c5fd;
+
+  --color-overlay-backdrop: rgba(0, 0, 0, 0.7);
+
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 4px 4px 0 #e5e5e5;
 }
 
+/* Also support prefers-color-scheme for users without JS */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --color-paper: #1a1a1a;
+    --color-surface: #262626;
+    --color-muted: #a3a3a3;
+    --color-border-subtle: #404040;
+    --color-surface-page: #1a1a1a;
+    --color-surface-card: #262626;
+    --color-surface-overlay: #303030;
+    --color-surface-sunken: #141414;
+    --color-text-primary: #f5f5f5;
+    --color-text-secondary: #d4d4d4;
+    --color-text-muted: #a3a3a3;
+    --color-text-disabled: #525252;
+    --color-text-inverse: #171717;
+    --color-border-default: #404040;
+    --color-border-subtle: #333333;
+    --color-border-strong: #e5e5e5;
+    --color-action-primary: #f5f5f5;
+    --color-action-primary-hover: #e5e5e5;
+    --color-action-primary-active: #d4d4d4;
+    --color-action-disabled: #404040;
+    --color-success-bg: #1a3a1a;
+    --color-success-text: #86efac;
+    --color-warning-bg: #3d2e00;
+    --color-warning-text: #fde68a;
+    --color-danger-bg: #3d1a1a;
+    --color-danger-text: #fca5a5;
+    --color-info-bg: #1a2a4a;
+    --color-info-text: #93c5fd;
+    --color-overlay-backdrop: rgba(0, 0, 0, 0.7);
+    --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-floating: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-accent: 4px 4px 0 #e5e5e5;
+  }
+}
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
+/* ===== BASE STYLES ===== */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
 }
