@@ -7,9 +7,9 @@ import { focusRingWithinClasses } from "../../../primitives/FocusRing";
 const cardVariants = cva("flex flex-col rounded-standard text-text-primary", {
   variants: {
     variant: {
-      default: "border border-border-subtle bg-surface-card",
-      outlined: "border border-border-strong bg-transparent",
-      elevated: "border border-transparent bg-surface-card shadow-floating",
+      default: "border-2 border-border-strong bg-surface-card shadow-raised",
+      outlined: "border-2 border-border-strong bg-transparent",
+      elevated: "border-2 border-border-strong bg-surface-card shadow-floating",
       accent: "border-2 border-border-strong bg-surface-card shadow-accent",
     },
     padding: {

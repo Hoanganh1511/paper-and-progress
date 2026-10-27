@@ -29,7 +29,12 @@ export function Table({
   ...props
 }: TableProps) {
   return (
-    <div className={cn("w-full overflow-x-auto", containerClassName)}>
+    <div
+      className={cn(
+        "w-full overflow-x-auto rounded-standard border-2 border-border-strong",
+        containerClassName,
+      )}
+    >
       <table
         ref={ref}
         data-striped={striped || undefined}

@@ -18,7 +18,7 @@ import { normalizeText, useSelect } from "./SelectContext";
 // Class names are written out in full so Tailwind can detect them statically.
 export const selectControlVariants = cva(
   [
-    "flex w-full items-center gap-2 rounded-standard border bg-surface-card text-left font-body text-text-primary",
+    "flex w-full items-center gap-2 rounded-standard border-2 bg-surface-card text-left font-body text-text-primary",
     "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)]",
     "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:opacity-50",
   ],
@@ -31,7 +31,7 @@ export const selectControlVariants = cva(
       },
       hasError: {
         true: "border-danger-text",
-        false: "border-border-default focus-visible:border-border-strong",
+        false: "border-border-strong",
       },
     },
     defaultVariants: {

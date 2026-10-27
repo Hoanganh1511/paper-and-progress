@@ -12,7 +12,7 @@ import { useFieldControlProps } from "../FormField/FormFieldContext";
 // wrapper's click handler forwards those clicks to the input.
 const inputWrapperVariants = cva(
   [
-    "relative isolate flex w-full items-center gap-2 rounded-standard border bg-surface-card font-body text-text-primary",
+    "relative isolate flex w-full items-center gap-2 rounded-standard border-2 bg-surface-card font-body text-text-primary",
     "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)]",
     "has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-surface-sunken has-[:disabled]:opacity-50",
     focusRingWithinClasses,
@@ -28,7 +28,7 @@ const inputWrapperVariants = cva(
       },
       hasError: {
         true: "border-danger-text",
-        false: "border-border-default focus-within:border-border-strong",
+        false: "border-border-strong",
       },
     },
     defaultVariants: {

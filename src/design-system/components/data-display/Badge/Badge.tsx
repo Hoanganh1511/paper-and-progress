@@ -6,11 +6,11 @@ import { focusRingClasses } from "../../../primitives/FocusRing";
 
 // Class names are written out in full so Tailwind can detect them statically.
 const badgeVariants = cva(
-  "inline-flex shrink-0 items-center rounded-pill border border-transparent font-body font-medium whitespace-nowrap",
+  "inline-flex shrink-0 items-center rounded-pill border border-border-strong font-body font-medium whitespace-nowrap",
   {
     variants: {
       variant: {
-        default: "border-border-default bg-surface-sunken text-text-primary",
+        default: "bg-surface-sunken text-text-primary",
         lime: "bg-accent-lime text-ink",
         pink: "bg-accent-pink text-ink",
         yellow: "bg-accent-yellow text-ink",

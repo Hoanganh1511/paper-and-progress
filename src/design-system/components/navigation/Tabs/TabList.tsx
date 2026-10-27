@@ -9,7 +9,7 @@ import { useTabs } from "./TabsContext";
 const tabListVariants = cva("flex", {
   variants: {
     variant: {
-      underline: "gap-4 border-b border-border-default",
+      underline: "gap-4 border-b-2 border-border-strong",
       pill: "w-fit max-w-full gap-1 overflow-x-auto rounded-pill bg-surface-sunken p-1",
     },
   },

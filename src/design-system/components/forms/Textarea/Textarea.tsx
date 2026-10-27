@@ -17,7 +17,7 @@ import { useFieldControlProps } from "../FormField/FormFieldContext";
 // Class names are written out in full so Tailwind can detect them statically.
 const textareaVariants = cva(
   [
-    "block w-full rounded-standard border bg-surface-card font-body text-text-primary placeholder:text-text-muted",
+    "block w-full rounded-standard border-2 bg-surface-card font-body text-text-primary placeholder:text-text-muted",
     "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)]",
     "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:opacity-50",
     focusRingClasses,
@@ -31,7 +31,7 @@ const textareaVariants = cva(
       },
       hasError: {
         true: "border-danger-text",
-        false: "border-border-default focus-visible:border-border-strong",
+        false: "border-border-strong",
       },
       autoResize: {
         true: "resize-none overflow-hidden",

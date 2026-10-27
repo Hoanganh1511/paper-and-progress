@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { PageContainer } from "@/design-system";
+import {
+  DevlogPreview,
+  computeProjectStatus,
+  getDevlogEntries,
+} from "@/features/devlog";
 import { LAUNCHER_MODULES, ModuleGrid } from "@/features/launcher";
 
 export const metadata: Metadata = {
@@ -8,18 +13,24 @@ export const metadata: Metadata = {
     "Mọi mô-đun của Paper & Progress trong một màn hình: mục tiêu, kỹ năng, lộ trình, dự án, khám phá và cộng đồng.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const entries = await getDevlogEntries();
+  const status = computeProjectStatus(entries);
+
   return (
     <main id="main-content" tabIndex={-1} className="outline-none">
       <PageContainer size="wide" spacing="spacious">
-        <ModuleGrid
-          titleAs="h1"
-          title="Bạn muốn làm gì hôm nay?"
-          description="Chọn một mô-đun để bắt đầu."
-          navLabel="Các mô-đun"
-          modules={LAUNCHER_MODULES}
-          lang="vi"
-        />
+        <div className="flex flex-col gap-16">
+          <ModuleGrid
+            titleAs="h1"
+            title="Bạn muốn làm gì hôm nay?"
+            description="Chọn một mô-đun để bắt đầu."
+            navLabel="Các mô-đun"
+            modules={LAUNCHER_MODULES}
+            lang="vi"
+          />
+          <DevlogPreview entries={entries} status={status} lang="vi" />
+        </div>
       </PageContainer>
     </main>
   );

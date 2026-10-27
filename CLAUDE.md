@@ -54,8 +54,18 @@
 - Accent pink: #FF9CCB (editorial, secondary highlight)
 - Accent yellow: #FFD56A (caution, milestone)
 - Accent blue: #8CAEFF (progress, info)
-- 75-85% interface là neutral, accent chỉ cho meaningful data/state/emphasis
-- Hard offset shadow (4px 4px 0 ink) là accent style, KHÔNG dùng cho mọi component
+- 75-85% interface là neutral về MÀU; accent chỉ cho meaningful data/state/emphasis
+
+## Phong cách: Neo-brutalism (áp dụng cho TOÀN BỘ interface)
+
+- Border cứng 2px `border-border-strong` (ink; đảo sang sáng ở dark mode) thay cho border mờ. Dùng cho button, input, select, checkbox/radio, card, table, dialog, drawer, menu, popover, toast, alert
+- Mọi elevation là hard offset shadow, KHÔNG blur: `shadow-raised` 2px (card), `shadow-floating` 4px (menu, dropdown, toast, tooltip), `shadow-modal` 6px (dialog, drawer), `shadow-accent` 4px (button). KHÔNG dùng shadow có blur
+- Bo góc vừa: `rounded-standard` (8px) là mặc định; `rounded-pill` chỉ cho badge, avatar, nút tròn
+- Nền trắng (`surface-card`) hoặc pastel (accent) trên nền paper
+- Active state của phần tử bấm được (button, nút chọn): `active:translate-x-0.5 active:translate-y-0.5 active:shadow-none` (nút "bị nhấn xuống"). Trạng thái đang chọn/hiện tại (`aria-current`, `aria-pressed`) giữ nguyên dạng đã nhấn
+- Ngoại lệ duy nhất: `Button variant="ghost"` (nút trong suốt) và đường kẻ phân cách trong bảng/danh sách vẫn phẳng
+- Khi tạo component mới, lấy màu viền và bóng từ các token trên, KHÔNG tự đặt border/shadow riêng
+- Hover/focus/active vẫn phải tôn trọng `prefers-reduced-motion` (`motion-reduce:transition-none`)
 
 ## Typography
 

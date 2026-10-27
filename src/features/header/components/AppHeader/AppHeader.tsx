@@ -8,25 +8,33 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Bookmark,
   Check,
   ChevronDown,
   GraduationCap,
+  Laptop,
+  LogOut,
+  type LucideIcon,
   Moon,
+  Settings,
   Sun,
+  User,
   Zap,
 } from "lucide-react";
 import {
+  AlertDialog,
   Badge,
   Button,
   Container,
   DropdownMenu,
-  IconButton,
   LinkButton,
   MenuContent,
   MenuItem,
+  MenuLabel,
+  MenuSeparator,
   MenuTrigger,
   SearchInput,
   cn,
@@ -47,16 +55,30 @@ export interface HeaderLanguage {
   flag?: ReactNode;
 }
 
+export interface HeaderUser {
+  name: string;
+  email: string;
+}
+
 export interface HeaderNavItem {
   label: string;
   href: string;
   /** Also current on deeper paths (`/goals` for `/goals/english`). */
   isSection?: boolean;
+  /** Decorative icon shown before the label; hidden from screen readers. */
+  icon?: LucideIcon;
+  /** The link's own button style, e.g. a background colour. */
+  className?: string;
 }
 
 export const defaultHeaderNavItems: HeaderNavItem[] = [
-  { label: "Học tập", href: "/learn" },
-  { label: "Công nghệ thông tin", href: "/goals/tech", isSection: true },
+  {
+    label: "Công nghệ thông tin",
+    href: "/goals/tech",
+    isSection: true,
+    icon: Laptop,
+    className: "bg-accent-yellow",
+  },
 ];
 
 export interface AppHeaderLabels {
@@ -68,13 +90,19 @@ export interface AppHeaderLabels {
   goals: string;
   /** Visible text of the call to action. */
   start: string;
-  /** Language of `start`, e.g. "zh-Hans". */
+  /** Language of `start`, e.g. "vi". */
   startLang: string;
   /** Plain-language meaning of `start`, read out by screen readers. */
   startMeaning: string;
   facebook: string;
   opensInNewTab: string;
   darkMode: string;
+  /** State words beside the dark mode switch in the account menu. */
+  themeOn: string;
+  themeOff: string;
+  /** Heading of the account menu's page links and of its settings. */
+  accountPages: string;
+  accountPreferences: string;
   language: string;
   currentLanguage: string;
   notifications: string;
@@ -82,6 +110,15 @@ export interface AppHeaderLabels {
   /** `{count}` is replaced with the score. */
   score: string;
   profile: string;
+  /** Menu entries of the account menu. */
+  profileInfo: string;
+  bookmarks: string;
+  settings: string;
+  logout: string;
+  logoutTitle: string;
+  logoutDescription: string;
+  logoutConfirm: string;
+  logoutCancel: string;
   /** `{count}` is replaced with the profile badge number. */
   profileBadge: string;
 }
@@ -91,18 +128,30 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   navigation: "Điều hướng chính",
   dictionary: "Từ điển",
   goals: "Mục tiêu tiếng Anh",
-  start: "学习从这里开始~",
-  startLang: "zh-Hans",
+  start: "Học tập",
+  startLang: "vi",
   startMeaning: "Bắt đầu học từ đây",
   facebook: "Facebook Community",
   opensInNewTab: "(mở trong tab mới)",
   darkMode: "Chế độ tối",
+  themeOn: "Bật",
+  themeOff: "Tắt",
+  accountPages: "Trang của bạn",
+  accountPreferences: "Tuỳ chọn",
   language: "Ngôn ngữ",
   currentLanguage: "(đang chọn)",
   notifications: "Thông báo",
   notificationsUnread: "Thông báo, có tin chưa đọc",
   score: "{count} điểm",
   profile: "Hồ sơ",
+  profileInfo: "Thông tin cá nhân",
+  bookmarks: "Bookmarks",
+  settings: "Cài đặt",
+  logout: "Đăng xuất",
+  logoutTitle: "Đăng xuất khỏi tài khoản?",
+  logoutDescription: "Bạn sẽ cần đăng nhập lại để tiếp tục học.",
+  logoutConfirm: "Đăng xuất",
+  logoutCancel: "Huỷ",
   profileBadge: "{count} mục mới",
 };
 
@@ -135,6 +184,12 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   /** The score / streak shown beside the lightning bolt. */
   score?: number;
   profileHref?: string;
+  bookmarksHref?: string;
+  settingsHref?: string;
+  /** Shown at the top of the account menu; the section is left out when omitted. */
+  user?: HeaderUser;
+  /** Called after the user confirms logging out. */
+  onLogout?: () => void;
   /** Small number on the avatar; hidden when 0 or omitted. */
   profileBadge?: number;
   /** Page links shown in a bar under the main row; none when empty. */
@@ -185,6 +240,10 @@ export function AppHeader({
   unreadNotifications = 0,
   score,
   profileHref = "/profile",
+  bookmarksHref = "/bookmarks",
+  settingsHref = "/settings",
+  user,
+  onLogout,
   profileBadge,
   navItems = defaultHeaderNavItems,
   languages = defaultHeaderLanguages,
@@ -201,6 +260,8 @@ export function AppHeader({
   const labels = { ...defaultAppHeaderLabels, ...labelOverrides };
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [languageCode, setLanguageCode] = useState(
     defaultLanguage ?? languages[0]?.code,
   );
@@ -210,6 +271,8 @@ export function AppHeader({
   const hasBadge = profileBadge !== undefined && profileBadge > 0;
   const isGoalsCurrent =
     pathname === goalsHref || !!pathname?.startsWith(`${goalsHref}/`);
+  const isLearnCurrent =
+    pathname === learnHref || !!pathname?.startsWith(`${learnHref}/`);
 
   // Publish the header's height (it changes when the layout wraps) while it
   // is sticky, so the bars beneath it know where to stick.
@@ -300,14 +363,6 @@ export function AppHeader({
                 </LinkButton>
               )}
 
-              <IconButton
-                icon={theme === "dark" ? Sun : Moon}
-                aria-label={labels.darkMode}
-                aria-pressed={theme === "dark"}
-                variant="ghost"
-                onClick={toggleTheme}
-              />
-
               {language && (
                 <DropdownMenu>
                   <MenuTrigger>
@@ -375,35 +430,129 @@ export function AppHeader({
               </Badge>
             )}
 
-            <a
-              href={profileHref}
-              aria-label={
-                hasBadge
-                  ? `${labels.profile}, ${fill(labels.profileBadge, profileBadge)}`
-                  : labels.profile
-              }
-              className={cn(
-                "relative inline-flex size-11 items-center justify-center rounded-pill",
-                focusRingClasses,
-              )}
-            >
-              <PandaIcon className="size-9" />
-              {hasBadge && (
-                <Badge
-                  variant="danger"
-                  size="sm"
-                  aria-hidden="true"
-                  className="absolute top-0 right-0 min-w-5 justify-center px-1 ring-2 ring-surface-page"
+            <DropdownMenu>
+              <MenuTrigger>
+                <button
+                  type="button"
+                  aria-label={
+                    hasBadge
+                      ? `${labels.profile}, ${fill(labels.profileBadge, profileBadge)}`
+                      : labels.profile
+                  }
+                  className={cn(
+                    "relative inline-flex size-11 cursor-pointer items-center justify-center rounded-pill",
+                    focusRingClasses,
+                  )}
                 >
-                  {profileBadge}
-                </Badge>
-              )}
-            </a>
+                  <PandaIcon className="size-9" />
+                  {hasBadge && (
+                    <Badge
+                      variant="danger"
+                      size="sm"
+                      aria-hidden="true"
+                      className="absolute top-0 right-0 min-w-5 justify-center px-1 ring-2 ring-surface-page"
+                    >
+                      {profileBadge}
+                    </Badge>
+                  )}
+                </button>
+              </MenuTrigger>
+              {/* From md it hangs under the avatar and grows from its corner; on phones it is a sheet along the bottom edge. */}
+              <MenuContent
+                align="end"
+                className={cn(
+                  "w-72 origin-top-right transition-[opacity,scale,translate] duration-[var(--duration-fast)] starting:scale-95 starting:opacity-0 motion-reduce:transition-none",
+                  "max-md:fixed max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:mt-0 max-md:w-full max-md:origin-bottom max-md:rounded-b-none max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:starting:translate-y-4 max-md:starting:scale-100",
+                )}
+              >
+                {user && (
+                  <div
+                    role="presentation"
+                    className="mb-1 flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-lime p-3 text-ink"
+                  >
+                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill border-2 border-border-strong bg-surface-card">
+                      <PandaIcon className="size-8" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="m-0 truncate font-display text-body-md font-bold">
+                        {user.name}
+                      </p>
+                      <p className="m-0 truncate font-body text-body-sm">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <MenuLabel>{labels.accountPages}</MenuLabel>
+                <MenuItem icon={User} onSelect={() => router.push(profileHref)}>
+                  {labels.profileInfo}
+                </MenuItem>
+                <MenuItem
+                  icon={Bookmark}
+                  onSelect={() => router.push(bookmarksHref)}
+                >
+                  {labels.bookmarks}
+                </MenuItem>
+                <MenuItem
+                  icon={Settings}
+                  onSelect={() => router.push(settingsHref)}
+                >
+                  {labels.settings}
+                </MenuItem>
+                <MenuSeparator />
+                <MenuLabel>{labels.accountPreferences}</MenuLabel>
+                {/* A switch in a menu: it stays open so the change can be seen. */}
+                <MenuItem
+                  role="menuitemcheckbox"
+                  aria-checked={theme === "dark"}
+                  icon={theme === "dark" ? Moon : Sun}
+                  // The switch already shows its state, so no hover fill.
+                  className="focus:bg-transparent focus:text-text-primary"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    toggleTheme();
+                  }}
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    {labels.darkMode}
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex items-center gap-2 font-body text-caption font-semibold"
+                    >
+                      {theme === "dark" ? labels.themeOn : labels.themeOff}
+                      <span
+                        className={cn(
+                          "relative h-5 w-9 rounded-pill border-2 border-border-strong transition-colors duration-[var(--duration-fast)] motion-reduce:transition-none",
+                          theme === "dark"
+                            ? "bg-accent-lime"
+                            : "bg-surface-card",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "absolute top-0.5 left-0.5 size-3 rounded-pill bg-border-strong transition-transform duration-[var(--duration-fast)] motion-reduce:transition-none",
+                            theme === "dark" && "translate-x-4",
+                          )}
+                        />
+                      </span>
+                    </span>
+                  </span>
+                </MenuItem>
+                <MenuSeparator />
+                <MenuItem
+                  icon={LogOut}
+                  destructive
+                  onSelect={() => setIsLogoutOpen(true)}
+                >
+                  {labels.logout}
+                </MenuItem>
+              </MenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <nav
           aria-label={labels.navigation}
-          className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-2"
+          className="-mx-1 flex items-center gap-2 px-1 pb-2"
         >
           <LinkButton
             href={goalsHref}
@@ -412,18 +561,10 @@ export function AppHeader({
             aria-current={isGoalsCurrent ? "page" : undefined}
             className={cn(
               "shrink-0 bg-accent-pink",
-              isGoalsCurrent &&
-                "ring-2 ring-ink ring-offset-2 ring-offset-surface-page",
+              isGoalsCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
             )}
           >
             {labels.goals}
-          </LinkButton>
-
-          <LinkButton href={learnHref} variant="accent" className="shrink-0">
-            <span aria-hidden="true">→</span>
-            <span lang={labels.startLang}>{labels.start}</span>
-            <span aria-hidden="true">♡</span>
-            <span className="sr-only">{`(${labels.startMeaning})`}</span>
           </LinkButton>
 
           {navItems.map((item) => {
@@ -431,22 +572,52 @@ export function AppHeader({
               pathname === item.href ||
               (item.isSection && !!pathname?.startsWith(`${item.href}/`));
             return (
-              <a
+              <LinkButton
                 key={item.href}
                 href={item.href}
+                variant="accent"
+                leftIcon={item.icon}
                 aria-current={isCurrent ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex min-h-11 shrink-0 items-center rounded-pill px-4 text-body-md font-medium text-text-secondary hover:bg-surface-sunken hover:text-text-primary",
-                  "aria-[current=page]:bg-accent-lime aria-[current=page]:font-semibold aria-[current=page]:text-ink",
-                  focusRingClasses,
+                  "h-auto min-h-[var(--height-default)] shrink-0 py-2",
+                  item.className,
+                  isCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
                 )}
               >
                 {item.label}
-              </a>
+              </LinkButton>
             );
           })}
+
+          <LinkButton
+            href={learnHref}
+            variant="accent"
+            aria-current={isLearnCurrent ? "page" : undefined}
+            className={cn(
+              "shrink-0",
+              isLearnCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
+            )}
+          >
+            <span aria-hidden="true">→</span>
+            <span lang={labels.startLang}>{labels.start}</span>
+            <span aria-hidden="true">♡</span>
+            <span className="sr-only">{`(${labels.startMeaning})`}</span>
+          </LinkButton>
         </nav>
       </Container>
+      <AlertDialog
+        open={isLogoutOpen}
+        variant="destructive"
+        title={labels.logoutTitle}
+        description={labels.logoutDescription}
+        confirmLabel={labels.logoutConfirm}
+        cancelLabel={labels.logoutCancel}
+        onCancel={() => setIsLogoutOpen(false)}
+        onConfirm={() => {
+          setIsLogoutOpen(false);
+          onLogout?.();
+        }}
+      />
     </header>
   );
 }

@@ -24,7 +24,7 @@ import { DialogContext } from "./DialogContext";
 // anchored to the bottom edge); from `sm` up it is centered.
 const dialogPanelVariants = cva(
   [
-    "relative flex max-h-[90dvh] w-full flex-col overflow-hidden bg-surface-overlay text-text-primary shadow-modal outline-none",
+    "relative flex max-h-[90dvh] w-full flex-col overflow-hidden border-2 border-border-strong bg-surface-overlay text-text-primary shadow-modal outline-none",
     "rounded-t-soft sm:max-h-[85dvh] sm:rounded-soft",
     "transition-[opacity,translate] duration-[var(--duration-normal)] ease-[var(--ease-default)] starting:translate-y-4 starting:opacity-0 motion-reduce:transition-none",
   ],

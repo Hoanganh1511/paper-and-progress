@@ -8,7 +8,7 @@ const pageContainerVariants = cva("", {
     spacing: {
       compact: "py-4 md:py-6",
       default: "py-6 md:py-8",
-      spacious: "py-8 md:py-12",
+      spacious: "py-8 md:py-10",
     },
   },
   defaultVariants: {

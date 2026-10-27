@@ -64,8 +64,8 @@ export function Checkbox({
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none size-full rounded-sharp border bg-surface-card transition-colors duration-[var(--duration-fast)]",
-            "border-text-muted peer-aria-invalid:border-danger-text",
+            "pointer-events-none size-full rounded-sharp border-2 bg-surface-card transition-colors duration-[var(--duration-fast)]",
+            "border-border-strong peer-aria-invalid:border-danger-text",
             "peer-focus-visible:outline-2 peer-focus-visible:outline-solid peer-focus-visible:outline-border-focus peer-focus-visible:outline-offset-2",
             indeterminate
               ? "border-action-primary bg-action-primary"

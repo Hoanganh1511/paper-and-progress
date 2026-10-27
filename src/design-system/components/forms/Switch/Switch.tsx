@@ -36,7 +36,7 @@ export function Switch({ label, className, ref, ...props }: SwitchProps) {
           aria-hidden="true"
           className={cn(
             "pointer-events-none absolute inset-0 rounded-pill bg-text-muted transition-colors duration-[var(--duration-fast)]",
-            "after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-pill after:bg-surface after:shadow-raised after:transition-transform after:duration-[var(--duration-fast)]",
+            "after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-pill after:border after:border-border-strong after:bg-surface after:transition-transform after:duration-[var(--duration-fast)]",
             "peer-checked:bg-action-primary peer-checked:after:translate-x-5",
             "peer-focus-visible:outline-2 peer-focus-visible:outline-solid peer-focus-visible:outline-border-focus peer-focus-visible:outline-offset-2",
           )}

@@ -10,4 +10,5 @@ export type {
   AppHeaderLabels,
   HeaderLanguage,
   HeaderNavItem,
+  HeaderUser,
 } from "./AppHeader";

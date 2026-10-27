@@ -24,8 +24,8 @@ describe("Button", () => {
   it("renders each variant", () => {
     const expected = {
       primary: "bg-action-primary",
-      secondary: "border-border-subtle",
-      outline: "border-border-strong",
+      secondary: "bg-surface-card",
+      outline: "bg-surface-page",
       ghost: "bg-transparent",
       destructive: "bg-danger-text",
       accent: "bg-accent-lime",
@@ -35,6 +35,27 @@ describe("Button", () => {
       expect(screen.getByRole("button")).toHaveClass(expected[variant]);
       unmount();
     });
+  });
+
+  it("gives every solid variant a hard shadow that collapses on press, but not ghost", () => {
+    const solid = [
+      "primary",
+      "secondary",
+      "outline",
+      "destructive",
+      "accent",
+    ] as const;
+    solid.forEach((variant) => {
+      const { unmount } = render(<Button variant={variant}>Test</Button>);
+      expect(screen.getByRole("button")).toHaveClass(
+        "border-border-strong",
+        "shadow-accent",
+        "active:shadow-none",
+      );
+      unmount();
+    });
+    render(<Button variant="ghost">Test</Button>);
+    expect(screen.getByRole("button")).not.toHaveClass("shadow-accent");
   });
 
   it("renders each size", () => {

@@ -22,6 +22,10 @@ const ZALO_SUPPORT_URL = "https://zalo.me/";
 const FANPAGE_URL = "https://www.facebook.com/";
 const SAMPLE_SCORE = 227;
 const SAMPLE_PROFILE_BADGE = 1;
+const SAMPLE_USER = {
+  name: "Nguyễn Văn A",
+  email: "nguyenva@email.com",
+};
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -47,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           facebookHref={FACEBOOK_COMMUNITY_URL}
           score={SAMPLE_SCORE}
           profileBadge={SAMPLE_PROFILE_BADGE}
+          user={SAMPLE_USER}
         />
         {/* Grows to fill short pages, so the footer stays at the bottom. */}
         <div className="flex-1">{children}</div>

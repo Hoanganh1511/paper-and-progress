@@ -31,8 +31,8 @@ const drawerPanelVariants = cva(
   {
     variants: {
       side: {
-        left: "left-0 border-r border-border-default starting:-translate-x-4",
-        right: "right-0 border-l border-border-default starting:translate-x-4",
+        left: "left-0 border-r-2 border-border-strong starting:-translate-x-4",
+        right: "right-0 border-l-2 border-border-strong starting:translate-x-4",
       },
     },
     defaultVariants: {

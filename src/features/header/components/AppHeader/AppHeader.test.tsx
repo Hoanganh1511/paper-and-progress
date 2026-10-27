@@ -23,7 +23,11 @@ function setup(props: Partial<AppHeaderProps> = {}) {
 }
 
 const pathname = vi.hoisted(() => ({ current: "/" as string | null }));
-vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathname.current,
+  useRouter: () => ({ push }),
+}));
 
 describe("AppHeader", () => {
   afterEach(() => {
@@ -41,7 +45,7 @@ describe("AppHeader", () => {
       setup();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       expect(
-        within(nav).getByRole("link", { name: "Học tập" }),
+        within(nav).getByRole("link", { name: /^Học tập/ }),
       ).toHaveAttribute("href", "/learn");
       expect(
         within(nav).getByRole("link", { name: "Công nghệ thông tin" }),
@@ -51,10 +55,6 @@ describe("AppHeader", () => {
     it("marks the current page, including deeper paths of a section", () => {
       pathname.current = "/learn";
       const { unmount } = setup();
-      expect(screen.getByRole("link", { name: "Học tập" })).toHaveAttribute(
-        "aria-current",
-        "page",
-      );
       expect(
         screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).not.toHaveAttribute("aria-current");
@@ -65,9 +65,6 @@ describe("AppHeader", () => {
       expect(
         screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).toHaveAttribute("aria-current", "page");
-      expect(screen.getByRole("link", { name: "Học tập" })).not.toHaveAttribute(
-        "aria-current",
-      );
     });
 
     it("takes custom items; the goals and call-to-action links stay even when empty", () => {
@@ -86,7 +83,7 @@ describe("AppHeader", () => {
         within(nav).getByRole("link", { name: "Mục tiêu tiếng Anh" }),
       ).toBeInTheDocument();
       expect(
-        within(nav).getByRole("link", { name: /学习从这里开始~/ }),
+        within(nav).getByRole("link", { name: /Học tập/ }),
       ).toBeInTheDocument();
       expect(
         within(nav).queryByRole("link", { name: "Từ điển" }),
@@ -148,6 +145,10 @@ describe("AppHeader", () => {
   });
 
   describe("search and call to action", () => {
+    afterEach(() => {
+      pathname.current = "/";
+    });
+
     it("has a dictionary search that works without JavaScript (a GET form)", () => {
       setup();
       const search = screen.getByRole("search");
@@ -182,32 +183,38 @@ describe("AppHeader", () => {
     it("has a call to action that links to the learning page, in the nav bar", () => {
       setup();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
-      const link = within(nav).getByRole("link", { name: /学习从这里开始~/ });
+      const link = within(nav).getByRole("link", { name: /Học tập/ });
       expect(link).toHaveAttribute("href", "/learn");
       // The arrow and the heart are decorative and left out of the name.
-      expect(link).toHaveAccessibleName(
-        /^学习从这里开始~\s*\(Bắt đầu học từ đây\)$/,
-      );
-      expect(link.querySelector('[lang="zh-Hans"]')).toHaveTextContent(
-        "学习从这里开始~",
-      );
+      expect(link).toHaveAccessibleName(/^Học tập\s*\(Bắt đầu học từ đây\)$/);
+      expect(link.querySelector('[lang="vi"]')).toHaveTextContent("Học tập");
       expect(link).toHaveClass("bg-accent-lime");
     });
 
     it("hides the decorative arrow and heart from its accessible name", () => {
       setup();
-      const link = screen.getByRole("link", { name: /学习从这里开始~/ });
+      const link = screen.getByRole("link", { name: /Học tập/ });
       const hidden = Array.from(
         link.querySelectorAll('[aria-hidden="true"]'),
       ).map((element) => element.textContent);
       expect(hidden).toEqual(["→", "♡"]);
     });
 
+    it("marks itself current on the learning page and its subpaths", () => {
+      pathname.current = "/learn/english";
+      setup();
+      expect(screen.getByRole("link", { name: /^Học tập/ })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    });
+
     it("can lead elsewhere", () => {
       setup({ learnHref: "/start" });
-      expect(
-        screen.getByRole("link", { name: /学习从这里开始/ }),
-      ).toHaveAttribute("href", "/start");
+      expect(screen.getByRole("link", { name: /Học tập/ })).toHaveAttribute(
+        "href",
+        "/start",
+      );
     });
   });
 
@@ -241,27 +248,54 @@ describe("AppHeader", () => {
   });
 
   describe("dark mode", () => {
-    it("is a toggle button that switches the theme and remembers it", async () => {
+    async function openMenuAndFindSwitch() {
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      return screen.getByRole("menuitemcheckbox", { name: /Chế độ tối/ });
+    }
+
+    it("is no longer a button in the header bar", () => {
       setup();
-      const toggle = screen.getByRole("button", { name: "Chế độ tối" });
-      expect(toggle).toHaveAttribute("aria-pressed", "false");
+      expect(
+        screen.queryByRole("button", { name: "Chế độ tối" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("is a switch in the account menu that changes the theme and remembers it", async () => {
+      setup();
+      const toggle = await openMenuAndFindSwitch();
+      expect(toggle).toHaveAttribute("aria-checked", "false");
+      expect(toggle).toHaveTextContent("Tắt");
 
       await userEvent.click(toggle);
-      expect(toggle).toHaveAttribute("aria-pressed", "true");
+      // The menu stays open so the change can be seen.
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+      expect(toggle).toHaveTextContent("Bật");
       expect(document.documentElement).toHaveClass("dark");
       expect(window.localStorage.getItem("theme")).toBe("dark");
 
       await userEvent.click(toggle);
-      expect(toggle).toHaveAttribute("aria-pressed", "false");
+      expect(toggle).toHaveAttribute("aria-checked", "false");
       expect(document.documentElement).not.toHaveClass("dark");
     });
 
     it("shows a moon in light mode and a sun in dark mode", async () => {
       setup();
-      const toggle = screen.getByRole("button", { name: "Chế độ tối" });
-      expect(toggle.querySelector("svg")).toHaveClass("lucide-moon");
-      await userEvent.click(toggle);
+      const toggle = await openMenuAndFindSwitch();
       expect(toggle.querySelector("svg")).toHaveClass("lucide-sun");
+      await userEvent.click(toggle);
+      expect(toggle.querySelector("svg")).toHaveClass("lucide-moon");
+    });
+
+    it("can be reached with the arrow keys and toggled with Enter", async () => {
+      setup();
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
+      expect(
+        screen.getByRole("menuitemcheckbox", { name: /Chế độ tối/ }),
+      ).toHaveFocus();
+      await userEvent.keyboard("{Enter}");
+      expect(document.documentElement).toHaveClass("dark");
     });
   });
 
@@ -372,19 +406,132 @@ describe("AppHeader", () => {
     });
   });
 
-  describe("profile", () => {
-    it("links to the profile and announces the badge", () => {
+  describe("account menu", () => {
+    const user = { name: "Nguyễn Văn A", email: "nguyenva@email.com" };
+
+    afterEach(() => {
+      push.mockClear();
+    });
+
+    it("is a closed menu button that announces the badge", () => {
       setup();
-      const link = screen.getByRole("link", { name: "Hồ sơ, 1 mục mới" });
-      expect(link).toHaveAttribute("href", "/profile");
-      const badge = within(link).getByText("1");
-      expect(badge).toHaveAttribute("aria-hidden", "true");
+      const trigger = screen.getByRole("button", { name: "Hồ sơ, 1 mục mới" });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+      expect(within(trigger).getByText("1")).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     });
 
     it("has no badge when there is nothing new", () => {
       setup({ profileBadge: 0 });
-      const link = screen.getByRole("link", { name: "Hồ sơ" });
-      expect(within(link).queryByText("0")).not.toBeInTheDocument();
+      const trigger = screen.getByRole("button", { name: "Hồ sơ" });
+      expect(within(trigger).queryByText("0")).not.toBeInTheDocument();
+    });
+
+    it("opens on click with the user's info and the links", async () => {
+      setup({ user });
+      const trigger = screen.getByRole("button", { name: /Hồ sơ/ });
+      await userEvent.click(trigger);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+      const menu = screen.getByRole("menu");
+      expect(within(menu).getByText("Nguyễn Văn A")).toBeInTheDocument();
+      expect(within(menu).getByText("nguyenva@email.com")).toBeInTheDocument();
+      expect(
+        within(menu)
+          .getAllByRole("menuitem")
+          .map((item) => item.textContent),
+      ).toEqual(["Thông tin cá nhân", "Bookmarks", "Cài đặt", "Đăng xuất"]);
+    });
+
+    it("leaves the info section out without a user", async () => {
+      setup();
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(screen.queryByText("nguyenva@email.com")).not.toBeInTheDocument();
+    });
+
+    it("goes to the chosen page and closes", async () => {
+      setup({ user });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Bookmarks" }),
+      );
+      expect(push).toHaveBeenCalledWith("/bookmarks");
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
+
+    it("can lead to other pages", async () => {
+      setup({ profileHref: "/me", settingsHref: "/prefs" });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Thông tin cá nhân" }),
+      );
+      expect(push).toHaveBeenLastCalledWith("/me");
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(screen.getByRole("menuitem", { name: "Cài đặt" }));
+      expect(push).toHaveBeenLastCalledWith("/prefs");
+    });
+
+    it("closes on Escape and moves with the arrow keys", async () => {
+      setup({ user });
+      const trigger = screen.getByRole("button", { name: /Hồ sơ/ });
+      await userEvent.click(trigger);
+      expect(
+        screen.getByRole("menuitem", { name: "Thông tin cá nhân" }),
+      ).toHaveFocus();
+      await userEvent.keyboard("{ArrowDown}");
+      expect(screen.getByRole("menuitem", { name: "Bookmarks" })).toHaveFocus();
+      await userEvent.keyboard("{Escape}");
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+
+    it("closes on a click outside", async () => {
+      setup({ user });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(document.body);
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
+
+    it("asks for confirmation before logging out", async () => {
+      const onLogout = vi.fn();
+      setup({ user, onLogout });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Đăng xuất" }),
+      );
+      expect(onLogout).not.toHaveBeenCalled();
+
+      const dialog = screen.getByRole("alertdialog");
+      expect(
+        within(dialog).getByText("Đăng xuất khỏi tài khoản?"),
+      ).toBeInTheDocument();
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: "Huỷ" }),
+      );
+      expect(onLogout).not.toHaveBeenCalled();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Đăng xuất" }),
+      );
+      await userEvent.click(
+        within(screen.getByRole("alertdialog")).getByRole("button", {
+          name: "Đăng xuất",
+        }),
+      );
+      expect(onLogout).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+
+    it("has no accessibility violations while open", async () => {
+      const { container } = setup({ user });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(await axe(container)).toHaveNoViolations();
     });
   });
 
@@ -499,7 +646,7 @@ describe("AppHeader", () => {
     });
   });
 
-  it("accepts translated labels", () => {
+  it("accepts translated labels", async () => {
     setup({
       labels: {
         brand: "Báo Lingo",
@@ -513,10 +660,10 @@ describe("AppHeader", () => {
     expect(
       screen.getByRole("searchbox", { name: "Tra từ" }),
     ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tài khoản" }));
     expect(
-      screen.getByRole("button", { name: "Giao diện tối" }),
+      screen.getByRole("menuitemcheckbox", { name: /Giao diện tối/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Tài khoản" })).toBeInTheDocument();
   });
 
   it("receives ref via props and merges className", () => {
@@ -532,7 +679,6 @@ describe("AppHeader", () => {
       /^Baolingo$/,
       /^Từ điển$/,
       /^Facebook Community/,
-      /^Chế độ tối$/,
       /^Ngôn ngữ: Tiếng Việt$/,
       /^Thông báo, có tin chưa đọc$/,
       /^Hồ sơ, 1 mục mới$/,

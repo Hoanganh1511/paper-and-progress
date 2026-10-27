@@ -10,7 +10,7 @@ describe("Card", () => {
     render(<Card>Test</Card>);
     const el = screen.getByText("Test");
     expect(el.tagName).toBe("DIV");
-    expect(el).toHaveClass("bg-surface-card", "border-border-subtle", "p-6");
+    expect(el).toHaveClass("bg-surface-card", "border-border-strong", "p-6");
   });
 
   it("renders the element given by `as`", () => {
@@ -24,7 +24,7 @@ describe("Card", () => {
 
   it("renders each variant", () => {
     const expected = {
-      default: "border-border-subtle",
+      default: "shadow-raised",
       outlined: "border-border-strong",
       elevated: "shadow-floating",
       accent: "shadow-accent",

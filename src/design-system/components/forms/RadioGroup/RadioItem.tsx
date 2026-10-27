@@ -55,7 +55,7 @@ export function RadioItem({
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none size-full rounded-pill border border-text-muted bg-surface-card transition-colors duration-[var(--duration-fast)]",
+            "pointer-events-none size-full rounded-pill border-2 border-border-strong bg-surface-card transition-colors duration-[var(--duration-fast)]",
             "peer-checked:border-action-primary peer-checked:bg-action-primary",
             "peer-focus-visible:outline-2 peer-focus-visible:outline-solid peer-focus-visible:outline-border-focus peer-focus-visible:outline-offset-2",
           )}

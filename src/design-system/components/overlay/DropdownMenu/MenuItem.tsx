@@ -20,7 +20,7 @@ const menuItemVariants = cva(
     variants: {
       destructive: {
         true: "text-danger-text focus:bg-danger-bg",
-        false: "text-text-primary focus:bg-surface-sunken",
+        false: "text-text-primary focus:bg-accent-lime focus:text-ink",
       },
     },
     defaultVariants: {
@@ -34,6 +34,8 @@ export interface MenuItemProps
     Omit<ComponentProps<"button">, "type" | "role" | "onSelect">,
     Omit<VariantProps<typeof menuItemVariants>, "destructive"> {
   icon?: LucideIcon;
+  /** `menuitemcheckbox` for an on/off item; pair it with `aria-checked`. */
+  role?: "menuitem" | "menuitemcheckbox";
   /** Shown on the right, e.g. "⌘K". Display only: it does not bind the key. */
   shortcut?: string;
   destructive?: boolean;
@@ -43,6 +45,7 @@ export interface MenuItemProps
 
 export function MenuItem({
   icon: Icon,
+  role = "menuitem",
   shortcut,
   disabled = false,
   destructive = false,
@@ -78,7 +81,7 @@ export function MenuItem({
     <button
       ref={ref}
       type="button"
-      role="menuitem"
+      role={role}
       tabIndex={-1}
       aria-disabled={disabled || undefined}
       className={cn(menuItemVariants({ destructive }), className)}

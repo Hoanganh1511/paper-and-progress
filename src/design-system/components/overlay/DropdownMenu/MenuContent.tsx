@@ -14,7 +14,7 @@ import { useDropdownMenu } from "./DropdownMenuContext";
 
 // Class names are written out in full so Tailwind can detect them statically.
 const menuContentVariants = cva(
-  "absolute top-full z-[var(--z-dropdown)] mt-1 flex min-w-48 flex-col rounded-standard border border-border-default bg-surface-overlay p-1 text-text-primary shadow-floating outline-none",
+  "absolute top-full z-[var(--z-dropdown)] mt-1 flex min-w-48 flex-col rounded-standard border-2 border-border-strong bg-surface-overlay p-1 text-text-primary shadow-floating outline-none",
   {
     variants: {
       align: {
@@ -28,7 +28,8 @@ const menuContentVariants = cva(
   },
 );
 
-const ENABLED_ITEM_SELECTOR = '[role="menuitem"]:not([aria-disabled="true"])';
+const ENABLED_ITEM_SELECTOR =
+  '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
 
 export interface MenuContentProps
   extends

@@ -15,7 +15,7 @@ import { IconButton } from "../../actions/Button/IconButton";
 // Class names are written out in full so Tailwind can detect them statically.
 const toastVariants = cva(
   [
-    "pointer-events-auto flex w-full items-start gap-3 rounded-standard border p-4 font-body shadow-floating",
+    "pointer-events-auto flex w-full items-start gap-3 rounded-standard border-2 p-4 font-body shadow-floating",
     "transition-[opacity,translate] duration-[var(--duration-normal)] ease-[var(--ease-default)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none",
   ],
   {

@@ -5,7 +5,7 @@ import { cn } from "../../../utils/cn";
 
 // Class names are written out in full so Tailwind can detect them statically.
 const alertVariants = cva(
-  "flex w-full items-start gap-3 rounded-standard border p-3 font-body text-body-sm",
+  "flex w-full items-start gap-3 rounded-standard border-2 p-3 font-body text-body-sm",
   {
     variants: {
       variant: {

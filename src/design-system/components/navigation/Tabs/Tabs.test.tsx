@@ -147,7 +147,7 @@ describe("Tabs", () => {
 
   it("applies the underline and pill variants", () => {
     const { rerender } = render(<Example />);
-    expect(screen.getByRole("tablist")).toHaveClass("border-b");
+    expect(screen.getByRole("tablist")).toHaveClass("border-b-2");
     expect(tab("Account")).toHaveClass("aria-selected:after:bg-action-primary");
 
     rerender(<Example variant="pill" />);

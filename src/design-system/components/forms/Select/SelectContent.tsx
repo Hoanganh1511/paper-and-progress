@@ -8,7 +8,7 @@ import { useSelect } from "./SelectContext";
 
 // Class names are written out in full so Tailwind can detect them statically.
 const selectContentVariants = cva(
-  "absolute top-full z-[var(--z-dropdown)] mt-1 flex max-h-64 min-w-full flex-col overflow-y-auto rounded-standard border border-border-default bg-surface-overlay p-1 text-text-primary shadow-floating",
+  "absolute top-full z-[var(--z-dropdown)] mt-1 flex max-h-64 min-w-full flex-col overflow-y-auto rounded-standard border-2 border-border-strong bg-surface-overlay p-1 text-text-primary shadow-floating",
   {
     variants: {
       align: {
