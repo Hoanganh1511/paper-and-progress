@@ -63,7 +63,10 @@ const TECH_GROUPS: TechGroup[] = [
       ]),
       sub("be-framework", "Framework", [
         item("express", "Express", "server"),
-        item("nestjs", "NestJS", "server"),
+        {
+          ...item("nestjs", "NestJS", "server"),
+          href: "/goals/tech/backend-tutor",
+        },
         item("spring-boot", "Spring Boot", "server"),
         item("django", "Django", "server"),
         item("laravel", "Laravel", "server"),
