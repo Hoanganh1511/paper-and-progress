@@ -250,5 +250,6 @@ describe("BookmarkManager", () => {
       screen.getByRole("button", { name: "Dạng danh sách" }),
     );
     expect(await axe(container)).toHaveNoViolations();
-  });
+    // Two axe runs on a full grid take over the default 5s.
+  }, 20_000);
 });
