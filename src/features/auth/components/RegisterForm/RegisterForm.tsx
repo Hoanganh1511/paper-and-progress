@@ -244,6 +244,7 @@ export function RegisterForm({
         </Stack>
         <Button
           type="submit"
+          variant="accent"
           size="comfortable"
           isFullWidth
           isLoading={isSubmitting}

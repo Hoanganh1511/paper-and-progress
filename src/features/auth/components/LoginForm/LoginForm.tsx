@@ -181,6 +181,7 @@ export function LoginForm({
         </Stack>
         <Button
           type="submit"
+          variant="accent"
           size="comfortable"
           isFullWidth
           isLoading={isSubmitting}

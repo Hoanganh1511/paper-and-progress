@@ -1,5 +1,9 @@
 import type { AuthErrorCode } from "./authApi";
 
+/** Shown on a 429 while the retry countdown runs. */
+export const rateLimitedMessage = (seconds: number) =>
+  `Vui lòng đợi ${seconds} giây rồi thử lại.`;
+
 /** Vietnamese text for each backend error, shown as a form-level error. */
 export const AUTH_ERROR_MESSAGES: Record<AuthErrorCode, string> = {
   invalid_credentials: "Email hoặc mật khẩu không đúng.",

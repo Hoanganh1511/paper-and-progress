@@ -34,17 +34,21 @@ export class AuthApiError extends Error {
   readonly status: number;
   /** Per-field messages when the backend rejected a specific input. */
   readonly fieldErrors: Record<string, string>;
+  /** Seconds to wait before retrying; only set on a 429. */
+  readonly retryAfter?: number;
 
   constructor(
     code: AuthErrorCode,
     status = 0,
     fieldErrors: Record<string, string> = {},
+    retryAfter?: number,
   ) {
     super(code);
     this.name = "AuthApiError";
     this.code = code;
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -133,6 +137,7 @@ export function setSessionHandlers(handlers: SessionHandlers): void {
 interface ErrorBody {
   code?: string;
   errors?: Record<string, string>;
+  retryAfter?: number;
 }
 
 function codeFromStatus(status: number, url = ""): AuthErrorCode {
@@ -150,6 +155,12 @@ function codeFromStatus(status: number, url = ""): AuthErrorCode {
   return "unknown";
 }
 
+/** Reads the wait from the body's `retryAfter`, falling back to the `Retry-After` header. */
+function parseRetryAfter(fromBody: unknown, fromHeader: unknown): number {
+  const seconds = Number(fromBody ?? fromHeader);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 0;
+}
+
 function toAuthApiError(error: unknown): AuthApiError {
   if (error instanceof AuthApiError) return error;
   if (!axios.isAxiosError(error) || !error.response) {
@@ -161,7 +172,14 @@ function toAuthApiError(error: unknown): AuthApiError {
     body.code && AUTH_ERROR_CODES.includes(body.code)
       ? (body.code as AuthErrorCode)
       : codeFromStatus(status, error.config?.url);
-  return new AuthApiError(code, status, body.errors);
+  return new AuthApiError(
+    code,
+    status,
+    body.errors,
+    status === 429
+      ? parseRetryAfter(body.retryAfter, error.response.headers["retry-after"])
+      : undefined,
+  );
 }
 
 async function call<T>(request: Promise<AxiosResponse<T>>): Promise<T> {

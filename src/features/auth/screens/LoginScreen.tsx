@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Stack } from "@/design-system";
 import { LoginForm } from "../components/LoginForm";
 import { AuthApiError } from "../authApi";
-import { useAuth } from "../hooks";
+import { useAuth, useRateLimit } from "../hooks";
 import { loginLabels } from "../labels";
-import { AUTH_ERROR_MESSAGES } from "../messages";
+import { AUTH_ERROR_MESSAGES, rateLimitedMessage } from "../messages";
 
 /** `/login`: signs in, then continues to 2FA, email verification or the app. */
 export function LoginScreen() {
@@ -21,12 +21,14 @@ export function LoginScreen() {
       : undefined;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  const rateLimit = useRateLimit();
 
   async function handleSubmit(values: {
     email: string;
     password: string;
     rememberMe: boolean;
   }) {
+    if (rateLimit.isLimited) return;
     setIsSubmitting(true);
     setError(undefined);
     try {
@@ -39,6 +41,11 @@ export function LoginScreen() {
       }
       router.push("/");
     } catch (caught) {
+      if (rateLimit.handle(caught)) {
+        setError(undefined);
+        setIsSubmitting(false);
+        return;
+      }
       const code = caught instanceof AuthApiError ? caught.code : "unknown";
       if (code === "email_not_verified") {
         router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
@@ -62,7 +69,11 @@ export function LoginScreen() {
         labels={loginLabels}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
-        error={error}
+        error={
+          rateLimit.isLimited
+            ? rateLimitedMessage(rateLimit.secondsLeft)
+            : error
+        }
         forgotPasswordHref="/forgot-password"
         signUpHref="/register"
       />
