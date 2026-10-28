@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegisterForm } from "../components/RegisterForm";
-import { AuthApiError, authApi } from "../authApi";
+import { AuthApiError } from "../authApi";
+import { useAuth } from "../hooks";
 import { registerLabels } from "../labels";
 import { AUTH_ERROR_MESSAGES } from "../messages";
 
 /** `/register`: creates the account, then asks the user to verify their email. */
 export function RegisterScreen() {
   const router = useRouter();
+  const { register } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [errors, setErrors] = useState<{ email?: string }>({});
@@ -23,7 +25,7 @@ export function RegisterScreen() {
     setError(undefined);
     setErrors({});
     try {
-      await authApi.register(values);
+      await register(values);
       router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
     } catch (caught) {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";

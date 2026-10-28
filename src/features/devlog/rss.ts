@@ -36,7 +36,7 @@ export function buildRssFeed(entries: DevlogEntry[], options: RssOptions) {
   const pageUrl = `${options.siteUrl}${options.pagePath}`;
   const items = entries
     .map((entry) => {
-      const url = `${pageUrl}#${entry.slug}`;
+      const url = `${pageUrl}?entry=${entry.slug}`;
       return [
         "    <item>",
         `      <title>${escapeXml(entry.title)}</title>`,

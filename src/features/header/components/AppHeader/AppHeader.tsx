@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -12,8 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   Bookmark,
-  Check,
-  ChevronDown,
+  ChevronRight,
   GraduationCap,
   Laptop,
   LogIn,
@@ -21,9 +21,9 @@ import {
   type LucideIcon,
   Moon,
   Settings,
+  Sparkles,
   Sun,
   User,
-  UserPlus,
   Zap,
 } from "lucide-react";
 import {
@@ -44,18 +44,7 @@ import {
   mergeRefs,
   useTheme,
 } from "@/design-system";
-import {
-  FacebookIcon,
-  PandaIcon,
-  UnitedKingdomFlagIcon,
-  VietnamFlagIcon,
-} from "../icons";
-
-export interface HeaderLanguage {
-  code: string;
-  label: string;
-  flag?: ReactNode;
-}
+import { FacebookIcon, PandaIcon } from "../icons";
 
 export interface HeaderUser {
   name: string;
@@ -87,6 +76,8 @@ export interface AppHeaderLabels {
   brand: string;
   /** Accessible name of the page navigation. */
   navigation: string;
+  /** Visible text of the button that reveals the page links. */
+  explore: string;
   dictionary: string;
   /** Visible text of the highlighted link to the English goals page. */
   goals: string;
@@ -105,8 +96,6 @@ export interface AppHeaderLabels {
   /** Heading of the account menu's page links and of its settings. */
   accountPages: string;
   accountPreferences: string;
-  language: string;
-  currentLanguage: string;
   notifications: string;
   notificationsUnread: string;
   /** `{count}` is replaced with the score. */
@@ -116,9 +105,8 @@ export interface AppHeaderLabels {
   profileInfo: string;
   bookmarks: string;
   settings: string;
-  /** Menu entries shown instead of the account pages while signed out. */
+  /** Visible text of the sign-in button shown while signed out. */
   signIn: string;
-  signUp: string;
   logout: string;
   logoutTitle: string;
   logoutDescription: string;
@@ -131,6 +119,7 @@ export interface AppHeaderLabels {
 export const defaultAppHeaderLabels: AppHeaderLabels = {
   brand: "Baolingo",
   navigation: "Điều hướng chính",
+  explore: "Khám phá",
   dictionary: "Từ điển",
   goals: "Mục tiêu tiếng Anh",
   start: "Học tập",
@@ -143,8 +132,6 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   themeOff: "Tắt",
   accountPages: "Trang của bạn",
   accountPreferences: "Tuỳ chọn",
-  language: "Ngôn ngữ",
-  currentLanguage: "(đang chọn)",
   notifications: "Thông báo",
   notificationsUnread: "Thông báo, có tin chưa đọc",
   score: "{count} điểm",
@@ -153,7 +140,6 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   bookmarks: "Bookmarks",
   settings: "Cài đặt",
   signIn: "Đăng nhập",
-  signUp: "Đăng ký",
   logout: "Đăng xuất",
   logoutTitle: "Đăng xuất khỏi tài khoản?",
   logoutDescription: "Bạn sẽ cần đăng nhập lại để tiếp tục học.",
@@ -161,19 +147,6 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   logoutCancel: "Huỷ",
   profileBadge: "{count} mục mới",
 };
-
-export const defaultHeaderLanguages: HeaderLanguage[] = [
-  {
-    code: "vi",
-    label: "Tiếng Việt",
-    flag: <VietnamFlagIcon className="h-4 w-6 shrink-0 rounded-sharp" />,
-  },
-  {
-    code: "en",
-    label: "English",
-    flag: <UnitedKingdomFlagIcon className="h-4 w-6 shrink-0 rounded-sharp" />,
-  },
-];
 
 export interface AppHeaderProps extends ComponentProps<"header"> {
   brandHref?: string;
@@ -195,19 +168,15 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   settingsHref?: string;
   /** Shown at the top of the account menu; the section is left out when omitted. */
   user?: HeaderUser;
-  /** Replaces the account pages and logout in the avatar menu with sign-in and sign-up. */
+  /** Replaces the avatar menu with a sign-in button. */
   isSignedOut?: boolean;
   signInHref?: string;
-  signUpHref?: string;
   /** Called after the user confirms logging out. */
   onLogout?: () => void;
   /** Small number on the avatar; hidden when 0 or omitted. */
   profileBadge?: number;
   /** Page links shown in a bar under the main row; none when empty. */
   navItems?: HeaderNavItem[];
-  languages?: HeaderLanguage[];
-  defaultLanguage?: string;
-  onLanguageChange?: (code: string) => void;
   /** Keep the header at the top while scrolling. */
   isSticky?: boolean;
   /** Replace any of the texts (translations). */
@@ -225,19 +194,145 @@ export const APP_HEADER_HEIGHT_VAR = "--app-header-height";
 const fill = (template: string, count: number) =>
   template.replace("{count}", String(count));
 
+/** Length of the Button press animation (`duration-150` in buttonVariants). */
+const PRESS_DURATION_MS = 150;
+
+/**
+ * The "Explore" button with the page links it reveals. The links open while
+ * a mouse hovers the button or its panel, and for everyone else on click /
+ * Enter / Space. Escape or moving focus away closes them. The links stay in
+ * the DOM, hidden, so the nav is rendered on the server.
+ */
+function ExploreMenu({
+  label,
+  navLabel,
+  children,
+}: {
+  label: string;
+  navLabel: string;
+  children: ReactNode;
+}) {
+  // `isOpen` presses the button at once; `isShown` reveals the panel only
+  // after that press animation has finished (see PRESS_DURATION_MS).
+  const [isOpen, setIsOpen] = useState(false);
+  const [isShown, setIsShown] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // A mouse opens the panel by hovering, so its click must not close it again.
+  const isOpenedByHoverRef = useRef(false);
+  const panelId = useId();
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  function setOpen(next: boolean) {
+    clearTimeout(timerRef.current);
+    setIsOpen(next);
+    if (!next) {
+      setIsShown(false);
+      return;
+    }
+    const prefersReducedMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    timerRef.current = setTimeout(
+      () => setIsShown(true),
+      prefersReducedMotion ? 0 : PRESS_DURATION_MS,
+    );
+  }
+
+  return (
+    <div
+      className="order-2 md:relative md:order-2 pl-3"
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse" && !isOpen) {
+          isOpenedByHoverRef.current = true;
+          setOpen(true);
+        }
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") {
+          isOpenedByHoverRef.current = false;
+          setOpen(false);
+        }
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && isOpen) {
+          setOpen(false);
+          buttonRef.current?.focus();
+        }
+      }}
+    >
+      <Button
+        ref={buttonRef}
+        variant="accent"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={() => {
+          if (isOpenedByHoverRef.current) {
+            isOpenedByHoverRef.current = false;
+            return;
+          }
+          setOpen(!isOpen);
+        }}
+        className="group relative animate-unpress bg-accent-yellow motion-reduce:animate-none aria-expanded:translate-x-1 aria-expanded:translate-y-1 aria-expanded:shadow-none"
+      >
+        <span className="relative inline-flex">
+          <Sparkles
+            aria-hidden="true"
+            size={18}
+            className="animate-twinkle motion-reduce:animate-none"
+          />
+          <Sparkles
+            aria-hidden="true"
+            size={9}
+            className="absolute -top-1.5 -right-2 animate-twinkle [animation-delay:0.5s] motion-reduce:animate-none"
+          />
+          <Sparkles
+            aria-hidden="true"
+            size={7}
+            className="absolute -right-1 -bottom-1.5 animate-twinkle [animation-delay:1s] motion-reduce:animate-none"
+          />
+        </span>
+        <span className="max-sm:sr-only">{label}</span>
+        <ChevronRight
+          aria-hidden="true"
+          size={16}
+          className="shrink-0 transition-transform duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] group-aria-expanded:rotate-90 motion-reduce:transition-none"
+        />
+      </Button>
+      <div
+        id={panelId}
+        hidden={!isShown}
+        className="absolute inset-x-0 top-full z-[var(--z-dropdown)] pt-2 transition-[opacity,translate] duration-150 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none md:inset-x-auto md:left-0 md:w-72"
+      >
+        <nav
+          aria-label={navLabel}
+          className="flex flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-3 shadow-floating"
+        >
+          {children}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The top bar of the learning app.
  *
  * - Left: the panda logo and the name.
- * - Middle: the dictionary search.
- * - Right: Facebook community, dark mode, language, notifications, score and
- *   profile.
+ * - Right: Facebook community, the dictionary search, notifications, score
+ *   and profile.
  * - Below that: a scrollable bar with the highlighted English goals button,
  *   the "start learning" call to action, and the page nav links.
  *
  * Below `md` the main row wraps to two lines: the logo with the
  * notification, score and profile on the first, the search with the
- * community, theme and language controls on the second. It is a client
+ * community link on the second. It is a client
  * component, but every prop is plain data, so a Server Component layout can
  * render it.
  */
@@ -256,13 +351,9 @@ export function AppHeader({
   user,
   isSignedOut = false,
   signInHref = "/login",
-  signUpHref = "/register",
   onLogout,
   profileBadge,
   navItems = defaultHeaderNavItems,
-  languages = defaultHeaderLanguages,
-  defaultLanguage,
-  onLanguageChange,
   isSticky = false,
   labels: labelOverrides,
   className,
@@ -276,11 +367,6 @@ export function AppHeader({
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  const [languageCode, setLanguageCode] = useState(
-    defaultLanguage ?? languages[0]?.code,
-  );
-  const language =
-    languages.find((option) => option.code === languageCode) ?? languages[0];
   const hasUnread = unreadNotifications > 0;
   const hasBadge = profileBadge !== undefined && profileBadge > 0;
   const isGoalsCurrent =
@@ -310,17 +396,12 @@ export function AppHeader({
     };
   }, [isSticky]);
 
-  function selectLanguage(code: string) {
-    setLanguageCode(code);
-    onLanguageChange?.(code);
-  }
-
   return (
     <header
       ref={mergedRef}
       lang="vi"
       className={cn(
-        "border-b border-border-default bg-surface-page",
+        "border-b border-border-default bg-surface-header",
         // A z-index makes the header its own stacking context (it is a flex
         // item of <body>), which would trap its menus beneath later sticky
         // bars. So only a sticky header gets one, high enough to stay above
@@ -331,7 +412,7 @@ export function AppHeader({
       {...props}
     >
       <Container size="wide">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 md:h-16 md:flex-nowrap md:py-0">
+        <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2 py-2 md:h-16 md:flex-nowrap md:py-0">
           <a
             href={brandHref}
             className={cn(
@@ -345,97 +426,93 @@ export function AppHeader({
             </span>
           </a>
 
+          <ExploreMenu label={labels.explore} navLabel={labels.navigation}>
+            <LinkButton
+              href={goalsHref}
+              variant="accent"
+              leftIcon={GraduationCap}
+              aria-current={isGoalsCurrent ? "page" : undefined}
+              className={cn(
+                "w-full justify-start bg-accent-pink",
+                isGoalsCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
+              )}
+            >
+              {labels.goals}
+            </LinkButton>
+
+            {navItems.map((item) => {
+              const isCurrent =
+                pathname === item.href ||
+                (item.isSection && !!pathname?.startsWith(`${item.href}/`));
+              return (
+                <LinkButton
+                  key={item.href}
+                  href={item.href}
+                  variant="accent"
+                  leftIcon={item.icon}
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={cn(
+                    "h-auto min-h-[var(--height-default)] w-full justify-start py-2",
+                    item.className,
+                    isCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
+                  )}
+                >
+                  {item.label}
+                </LinkButton>
+              );
+            })}
+
+            <LinkButton
+              href={learnHref}
+              variant="accent"
+              aria-current={isLearnCurrent ? "page" : undefined}
+              className={cn(
+                "w-full justify-start",
+                isLearnCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
+              )}
+            >
+              <span aria-hidden="true">→</span>
+              <span lang={labels.startLang}>{labels.start}</span>
+              <span aria-hidden="true">♡</span>
+              <span className="sr-only">{`(${labels.startMeaning})`}</span>
+            </LinkButton>
+          </ExploreMenu>
+
           {/* Below md this row is the second line; from md its children join the main row. */}
           <div className="order-3 flex w-full items-center gap-2 md:contents">
             <form
               role="search"
               action={searchAction}
               method="get"
-              className="min-w-0 flex-1 md:order-2 md:max-w-sm"
+              className="min-w-0 flex-1 md:order-4 md:ml-auto md:max-w-56"
             >
               <SearchInput
                 name="q"
                 aria-label={labels.dictionary}
                 placeholder={labels.dictionary}
                 autoComplete="off"
+                className="shadow-raised animate-unpress transition-[background-color,box-shadow,translate] [animation-delay:120ms] motion-reduce:animate-none focus-within:translate-x-0.5 focus-within:translate-y-0.5 focus-within:shadow-none motion-reduce:transition-none"
               />
             </form>
-
-            <div className="flex items-center gap-1 md:order-4 md:ml-auto">
-              {facebookHref && (
-                <LinkButton
-                  href={facebookHref}
-                  external
-                  externalLabel={labels.opensInNewTab}
-                  variant="ghost"
-                  className="px-3 lg:px-4"
-                >
-                  <FacebookIcon className="size-5 shrink-0" />
-                  <span className="sr-only lg:not-sr-only">
-                    {labels.facebook}
-                  </span>
-                </LinkButton>
-              )}
-
-              {language && (
-                <DropdownMenu>
-                  <MenuTrigger>
-                    <Button
-                      variant="ghost"
-                      aria-label={`${labels.language}: ${language.label}`}
-                      rightIcon={ChevronDown}
-                      className="px-3"
-                    >
-                      {language.flag}
-                      <span className="sr-only lg:not-sr-only">
-                        {language.label}
-                      </span>
-                    </Button>
-                  </MenuTrigger>
-                  <MenuContent align="end">
-                    {languages.map((option) => (
-                      <MenuItem
-                        key={option.code}
-                        onSelect={() => selectLanguage(option.code)}
-                      >
-                        <span className="flex items-center gap-3">
-                          {option.flag}
-                          {option.label}
-                          {option.code === language.code && (
-                            <>
-                              <Check aria-hidden="true" size={16} />
-                              <span className="sr-only">
-                                {labels.currentLanguage}
-                              </span>
-                            </>
-                          )}
-                        </span>
-                      </MenuItem>
-                    ))}
-                  </MenuContent>
-                </DropdownMenu>
-              )}
-            </div>
           </div>
 
-          <div className="order-2 ml-auto flex items-center gap-1 md:order-5 md:ml-0">
-            <span className="relative inline-flex">
-              <LinkButton
-                href={notificationsHref}
-                variant="ghost"
-                leftIcon={Bell}
-                aria-label={
-                  hasUnread ? labels.notificationsUnread : labels.notifications
-                }
-                className="aspect-square px-0"
-              />
+          <div className="order-2 ml-auto flex items-center gap-3 md:order-5 md:ml-0">
+            <LinkButton
+              href={notificationsHref}
+              variant="secondary"
+              leftIcon={Bell}
+              aria-label={
+                hasUnread ? labels.notificationsUnread : labels.notifications
+              }
+              className="aspect-square animate-unpress px-0 [animation-delay:240ms] motion-reduce:animate-none"
+            >
               {hasUnread && (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-2 right-2 size-2.5 rounded-pill bg-danger-text ring-2 ring-surface-page"
+                  className="pointer-events-none absolute -top-1 -right-1 size-3 rounded-pill border-2 border-border-strong bg-danger-text"
                 />
               )}
-            </span>
+            </LinkButton>
 
             {score !== undefined && (
               <Badge variant="yellow" icon={Zap} className="font-semibold">
@@ -444,207 +521,151 @@ export function AppHeader({
               </Badge>
             )}
 
-            <DropdownMenu>
-              <MenuTrigger>
-                <button
-                  type="button"
-                  aria-label={
-                    hasBadge
-                      ? `${labels.profile}, ${fill(labels.profileBadge, profileBadge)}`
-                      : labels.profile
-                  }
-                  className={cn(
-                    "relative inline-flex size-11 cursor-pointer items-center justify-center rounded-pill",
-                    focusRingClasses,
-                  )}
-                >
-                  <PandaIcon className="size-9" />
-                  {hasBadge && (
-                    <Badge
-                      variant="danger"
-                      size="sm"
-                      aria-hidden="true"
-                      className="absolute top-0 right-0 min-w-5 justify-center px-1 ring-2 ring-surface-page"
-                    >
-                      {profileBadge}
-                    </Badge>
-                  )}
-                </button>
-              </MenuTrigger>
-              {/* From md it hangs under the avatar and grows from its corner; on phones it is a sheet along the bottom edge. */}
-              <MenuContent
-                align="end"
-                className={cn(
-                  "w-72 origin-top-right transition-[opacity,scale,translate] duration-[var(--duration-fast)] starting:scale-95 starting:opacity-0 motion-reduce:transition-none",
-                  "max-md:fixed max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:mt-0 max-md:w-full max-md:origin-bottom max-md:rounded-b-none max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:starting:translate-y-4 max-md:starting:scale-100",
-                )}
+            {isSignedOut ? (
+              <LinkButton
+                href={signInHref}
+                leftIcon={LogIn}
+                className="animate-unpress bg-accent-lime text-ink [animation-delay:360ms] hover:bg-accent-lime active:bg-accent-lime motion-reduce:animate-none"
               >
-                {user && !isSignedOut && (
-                  <div
-                    role="presentation"
-                    className="mb-1 flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-lime p-3 text-ink"
+                {labels.signIn}
+              </LinkButton>
+            ) : (
+              <DropdownMenu>
+                <MenuTrigger>
+                  <button
+                    type="button"
+                    aria-label={
+                      hasBadge
+                        ? `${labels.profile}, ${fill(labels.profileBadge, profileBadge)}`
+                        : labels.profile
+                    }
+                    className={cn(
+                      "relative inline-flex size-11 cursor-pointer items-center justify-center rounded-pill",
+                      focusRingClasses,
+                    )}
                   >
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill border-2 border-border-strong bg-surface-card">
-                      <PandaIcon className="size-8" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="m-0 truncate font-display text-body-md font-bold">
-                        {user.name}
-                      </p>
-                      <p className="m-0 truncate font-body text-body-sm">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {isSignedOut ? (
-                  <>
-                    <MenuItem
-                      icon={LogIn}
-                      onSelect={() => router.push(signInHref)}
-                    >
-                      {labels.signIn}
-                    </MenuItem>
-                    <MenuItem
-                      icon={UserPlus}
-                      onSelect={() => router.push(signUpHref)}
-                    >
-                      {labels.signUp}
-                    </MenuItem>
-                    <MenuSeparator />
-                  </>
-                ) : (
-                  <>
-                    <MenuLabel>{labels.accountPages}</MenuLabel>
-                    <MenuItem
-                      icon={User}
-                      onSelect={() => router.push(profileHref)}
-                    >
-                      {labels.profileInfo}
-                    </MenuItem>
-                    <MenuItem
-                      icon={Bookmark}
-                      onSelect={() => router.push(bookmarksHref)}
-                    >
-                      {labels.bookmarks}
-                    </MenuItem>
-                    <MenuItem
-                      icon={Settings}
-                      onSelect={() => router.push(settingsHref)}
-                    >
-                      {labels.settings}
-                    </MenuItem>
-                    <MenuSeparator />
-                  </>
-                )}
-                <MenuLabel>{labels.accountPreferences}</MenuLabel>
-                {/* A switch in a menu: it stays open so the change can be seen. */}
-                <MenuItem
-                  role="menuitemcheckbox"
-                  aria-checked={theme === "dark"}
-                  icon={theme === "dark" ? Moon : Sun}
-                  // The switch already shows its state, so no hover fill.
-                  className="focus:bg-transparent focus:text-text-primary"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    toggleTheme();
-                  }}
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    {labels.darkMode}
-                    <span
-                      aria-hidden="true"
-                      className="inline-flex items-center gap-2 font-body text-caption font-semibold"
-                    >
-                      {theme === "dark" ? labels.themeOn : labels.themeOff}
-                      <span
-                        className={cn(
-                          "relative h-5 w-9 rounded-pill border-2 border-border-strong transition-colors duration-[var(--duration-fast)] motion-reduce:transition-none",
-                          theme === "dark"
-                            ? "bg-accent-lime"
-                            : "bg-surface-card",
-                        )}
+                    <PandaIcon className="size-9" />
+                    {hasBadge && (
+                      <Badge
+                        variant="danger"
+                        size="sm"
+                        aria-hidden="true"
+                        className="absolute top-0 right-0 min-w-5 justify-center px-1 ring-2 ring-surface-header"
                       >
+                        {profileBadge}
+                      </Badge>
+                    )}
+                  </button>
+                </MenuTrigger>
+                {/* From md it hangs under the avatar and grows from its corner; on phones it is a sheet along the bottom edge. */}
+                <MenuContent
+                  align="end"
+                  className={cn(
+                    "w-72 origin-top-right transition-[opacity,scale,translate] duration-[var(--duration-fast)] starting:scale-95 starting:opacity-0 motion-reduce:transition-none",
+                    "max-md:fixed max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:mt-0 max-md:w-full max-md:origin-bottom max-md:rounded-b-none max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:starting:translate-y-4 max-md:starting:scale-100",
+                  )}
+                >
+                  {user && (
+                    <div
+                      role="presentation"
+                      className="mb-1 flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-lime p-3 text-ink"
+                    >
+                      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill border-2 border-border-strong bg-surface-card">
+                        <PandaIcon className="size-8" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="m-0 truncate font-display text-body-md font-bold">
+                          {user.name}
+                        </p>
+                        <p className="m-0 truncate font-body text-body-sm">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <MenuLabel>{labels.accountPages}</MenuLabel>
+                  <MenuItem
+                    icon={User}
+                    onSelect={() => router.push(profileHref)}
+                  >
+                    {labels.profileInfo}
+                  </MenuItem>
+                  <MenuItem
+                    icon={Bookmark}
+                    onSelect={() => router.push(bookmarksHref)}
+                  >
+                    {labels.bookmarks}
+                  </MenuItem>
+                  <MenuItem
+                    icon={Settings}
+                    onSelect={() => router.push(settingsHref)}
+                  >
+                    {labels.settings}
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuLabel>{labels.accountPreferences}</MenuLabel>
+                  {/* A switch in a menu: it stays open so the change can be seen. */}
+                  <MenuItem
+                    role="menuitemcheckbox"
+                    aria-checked={theme === "dark"}
+                    icon={theme === "dark" ? Moon : Sun}
+                    // The switch already shows its state, so no hover fill.
+                    className="focus:bg-transparent focus:text-text-primary"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      toggleTheme();
+                    }}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      {labels.darkMode}
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex items-center gap-2 font-body text-caption font-semibold"
+                      >
+                        {theme === "dark" ? labels.themeOn : labels.themeOff}
                         <span
                           className={cn(
-                            "absolute top-0.5 left-0.5 size-3 rounded-pill bg-border-strong transition-transform duration-[var(--duration-fast)] motion-reduce:transition-none",
-                            theme === "dark" && "translate-x-4",
+                            "relative h-5 w-9 rounded-pill border-2 border-border-strong transition-colors duration-[var(--duration-fast)] motion-reduce:transition-none",
+                            theme === "dark"
+                              ? "bg-accent-lime"
+                              : "bg-surface-card",
                           )}
-                        />
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 left-0.5 size-3 rounded-pill bg-border-strong transition-transform duration-[var(--duration-fast)] motion-reduce:transition-none",
+                              theme === "dark" && "translate-x-4",
+                            )}
+                          />
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </MenuItem>
-                {!isSignedOut && (
-                  <>
-                    <MenuSeparator />
-                    <MenuItem
-                      icon={LogOut}
-                      destructive
-                      onSelect={() => setIsLogoutOpen(true)}
-                    >
-                      {labels.logout}
-                    </MenuItem>
-                  </>
-                )}
-              </MenuContent>
-            </DropdownMenu>
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem
+                    icon={LogOut}
+                    destructive
+                    onSelect={() => setIsLogoutOpen(true)}
+                  >
+                    {labels.logout}
+                  </MenuItem>
+                </MenuContent>
+              </DropdownMenu>
+            )}
+            {facebookHref && (
+              <LinkButton
+                href={facebookHref}
+                external
+                externalLabel={labels.opensInNewTab}
+                variant="secondary"
+                className="aspect-square animate-unpress px-0 [animation-delay:480ms] motion-reduce:animate-none"
+              >
+                <FacebookIcon className="size-5 shrink-0" />
+                <span className="sr-only">{labels.facebook}</span>
+              </LinkButton>
+            )}
           </div>
         </div>
-        <nav
-          aria-label={labels.navigation}
-          className="-mx-1 flex items-center gap-2 px-1 pb-2"
-        >
-          <LinkButton
-            href={goalsHref}
-            variant="accent"
-            leftIcon={GraduationCap}
-            aria-current={isGoalsCurrent ? "page" : undefined}
-            className={cn(
-              "shrink-0 bg-accent-pink",
-              isGoalsCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-            )}
-          >
-            {labels.goals}
-          </LinkButton>
-
-          {navItems.map((item) => {
-            const isCurrent =
-              pathname === item.href ||
-              (item.isSection && !!pathname?.startsWith(`${item.href}/`));
-            return (
-              <LinkButton
-                key={item.href}
-                href={item.href}
-                variant="accent"
-                leftIcon={item.icon}
-                aria-current={isCurrent ? "page" : undefined}
-                className={cn(
-                  "h-auto min-h-[var(--height-default)] shrink-0 py-2",
-                  item.className,
-                  isCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-                )}
-              >
-                {item.label}
-              </LinkButton>
-            );
-          })}
-
-          <LinkButton
-            href={learnHref}
-            variant="accent"
-            aria-current={isLearnCurrent ? "page" : undefined}
-            className={cn(
-              "shrink-0",
-              isLearnCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-            )}
-          >
-            <span aria-hidden="true">→</span>
-            <span lang={labels.startLang}>{labels.start}</span>
-            <span aria-hidden="true">♡</span>
-            <span className="sr-only">{`(${labels.startMeaning})`}</span>
-          </LinkButton>
-        </nav>
       </Container>
       <AlertDialog
         open={isLogoutOpen}

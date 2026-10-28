@@ -1,49 +1,9 @@
 import type { ComponentProps } from "react";
 import { CalendarDays, Check, Loader } from "lucide-react";
-import {
-  Badge,
-  Card,
-  Image,
-  ProgressBar,
-  Text,
-  cn,
-  focusRingClasses,
-} from "@/design-system";
-import { DEVLOG_MODULES, STATUS_LABELS, formatDevlogDate } from "../../status";
-import type { DevlogBlock, DevlogEntry } from "../../types";
-
-function Block({ block }: { block: DevlogBlock }) {
-  switch (block.type) {
-    case "paragraph":
-      return (
-        <Text as="p" size="body-md" color="secondary">
-          {block.text}
-        </Text>
-      );
-    case "list":
-      return (
-        <ul className="m-0 flex list-disc flex-col gap-1 pl-5 font-body text-body-md text-text-secondary">
-          {block.items.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      );
-    case "code":
-      return (
-        // Focusable so keyboard users can scroll long lines sideways.
-        <pre
-          tabIndex={0}
-          aria-label={block.language ? `Mã ${block.language}` : "Mã"}
-          className={cn(
-            "m-0 overflow-x-auto rounded-standard border border-border-subtle bg-surface-sunken p-3 font-mono text-body-sm text-text-primary",
-            focusRingClasses,
-          )}
-        >
-          <code>{block.code}</code>
-        </pre>
-      );
-  }
-}
+import { Badge, Card, Image, ProgressBar, Text, cn } from "@/design-system";
+import { STATUS_LABELS, formatDevlogDate, getModuleLabel } from "../../status";
+import type { DevlogEntry } from "../../types";
+import { DevlogBlocks } from "../DevlogBlocks";
 
 export interface DevlogEntryCardProps extends Omit<
   ComponentProps<"article">,
@@ -69,9 +29,7 @@ export function DevlogEntryCard({
   className,
   ...props
 }: DevlogEntryCardProps) {
-  const moduleLabel =
-    DEVLOG_MODULES.find((module) => module.id === entry.module)?.label ??
-    entry.module;
+  const moduleLabel = getModuleLabel(entry.module);
   const blocks = isCompact
     ? entry.body.filter((block) => block.type === "paragraph").slice(0, 1)
     : entry.body;
@@ -111,9 +69,7 @@ export function DevlogEntryCard({
         {entry.title}
       </Title>
 
-      {blocks.map((block, index) => (
-        <Block key={index} block={block} />
-      ))}
+      <DevlogBlocks blocks={blocks} />
 
       {!isCompact && entry.image && (
         <Image

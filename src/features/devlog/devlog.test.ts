@@ -1,10 +1,13 @@
 import { buildRssFeed, escapeXml } from "./rss";
 import { parseBody, parseDevlogEntry, parseFrontmatter } from "./parseEntry";
 import {
+  computePeriodProgress,
   computeProjectStatus,
+  computeProjectSummaries,
   filterEntries,
   formatDevlogDate,
   sortEntries,
+  toCustomProjectId,
 } from "./status";
 import type { DevlogEntry } from "./types";
 
@@ -188,6 +191,44 @@ describe("filterEntries", () => {
       slugs(filterEntries(entries, { module: ["auth"], tag: ["frontend"] })),
     ).toEqual(["c"]);
   });
+
+  it("matches a status", () => {
+    const withStatus = [
+      entry({ slug: "a", status: "done" }),
+      entry({ slug: "b", status: "in_progress" }),
+    ];
+    expect(slugs(filterEntries(withStatus, { status: ["done"] }))).toEqual([
+      "a",
+    ]);
+  });
+
+  it("searches title, text, tags and module name, requiring every word", () => {
+    const searchable = [
+      entry({
+        slug: "a",
+        title: "Auth System",
+        module: "auth",
+        tags: ["security"],
+        body: [{ type: "paragraph", text: "Refresh token rotation" }],
+      }),
+      entry({ slug: "b", title: "Text Primitive", module: "design-system" }),
+    ];
+    expect(slugs(filterEntries(searchable, { query: "TOKEN" }))).toEqual(["a"]);
+    expect(slugs(filterEntries(searchable, { query: "#" }))).toEqual([]);
+    expect(
+      slugs(filterEntries(searchable, { query: "security auth" })),
+    ).toEqual(["a"]);
+    expect(slugs(filterEntries(searchable, { query: "design" }))).toEqual([
+      "b",
+    ]);
+    expect(
+      slugs(filterEntries(searchable, { query: "token primitive" })),
+    ).toEqual([]);
+    expect(slugs(filterEntries(searchable, { query: "  " }))).toEqual([
+      "a",
+      "b",
+    ]);
+  });
 });
 
 describe("buildRssFeed", () => {
@@ -217,10 +258,114 @@ describe("buildRssFeed", () => {
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toContain("<title>Tom &amp; Jerry</title>");
     expect(xml).toContain(
-      "<link>https://example.com/devlog#2026-10-27-a</link>",
+      "<link>https://example.com/devlog?entry=2026-10-27-a</link>",
     );
     expect(xml).toContain("<pubDate>Tue, 27 Oct 2026 00:00:00 GMT</pubDate>");
     expect(xml).toContain("<category>x</category>");
     expect(xml).toContain("<description>Nội dung</description>");
+  });
+});
+
+describe("computeProjectSummaries", () => {
+  const entries = [
+    entry({
+      slug: "a",
+      module: "auth",
+      date: "2026-10-25",
+      status: "done",
+      progress: 10,
+    }),
+    entry({
+      slug: "b",
+      module: "auth",
+      date: "2026-10-27",
+      status: "in_progress",
+      progress: 30,
+    }),
+    entry({
+      slug: "c",
+      module: "database",
+      date: "2026-10-26",
+      status: "done",
+      progress: 5,
+    }),
+  ];
+  const projects = [
+    { id: "auth", label: "Auth" },
+    { id: "database", label: "Database" },
+    { id: "custom-blog", label: "Blog" },
+  ];
+
+  it("counts logs and statuses, and takes progress and date from the newest log", () => {
+    const [auth, database, blog] = computeProjectSummaries(entries, projects);
+    expect(auth).toMatchObject({
+      entryCount: 2,
+      doneCount: 1,
+      inProgressCount: 1,
+      progress: 30,
+      lastEntryAt: "2026-10-27",
+    });
+    expect(database).toMatchObject({
+      entryCount: 1,
+      doneCount: 1,
+      progress: 5,
+    });
+    expect(blog).toMatchObject({
+      entryCount: 0,
+      progress: 0,
+      lastEntryAt: null,
+    });
+  });
+});
+
+describe("toCustomProjectId", () => {
+  it("makes a prefixed ascii slug", () => {
+    expect(toCustomProjectId("Blog cá nhân")).toBe("custom-blog-ca-nhan");
+    expect(toCustomProjectId("Đồ án 2026!")).toBe("custom-do-an-2026");
+    expect(toCustomProjectId("???")).toBe("custom-project");
+  });
+});
+
+describe("computePeriodProgress", () => {
+  const entries = [
+    entry({ slug: "a", module: "auth", date: "2026-10-27", progress: 40 }),
+    entry({ slug: "b", module: "auth", date: "2026-10-20", progress: 25 }),
+    entry({ slug: "c", module: "auth", date: "2026-10-01", progress: 10 }),
+    entry({ slug: "d", module: "database", date: "2026-10-02", progress: 50 }),
+  ];
+  const byId = (period: ReturnType<typeof computePeriodProgress>, id: string) =>
+    period.modules.find((module) => module.id === id)!;
+
+  it("counts back from the newest entry, not from the clock", () => {
+    expect(computePeriodProgress(entries, 7).endsAt).toBe("2026-10-27");
+    expect(computePeriodProgress([], 7)).toMatchObject({
+      endsAt: null,
+      totalGained: 0,
+      totalEntries: 0,
+    });
+  });
+
+  it("gains the difference from the module's last entry before the period", () => {
+    const week = computePeriodProgress(entries, 7);
+    // 27/10 back 7 days starts 21/10: only "a" is in; "b" (25) is the baseline.
+    expect(byId(week, "auth")).toMatchObject({
+      progress: 40,
+      gained: 15,
+      entryCount: 1,
+    });
+    const month = computePeriodProgress(entries, 30);
+    // Everything is inside the month, so the baseline is zero.
+    expect(byId(month, "auth")).toMatchObject({ gained: 40, entryCount: 3 });
+    expect(month.totalEntries).toBe(4);
+  });
+
+  it("gains nothing in a module with no entry in the period", () => {
+    const week = computePeriodProgress(entries, 7);
+    expect(byId(week, "database")).toMatchObject({
+      progress: 50,
+      gained: 0,
+      entryCount: 0,
+    });
+    expect(week.totalGained).toBe(15);
   });
 });

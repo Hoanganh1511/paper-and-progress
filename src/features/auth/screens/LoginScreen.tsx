@@ -4,13 +4,15 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Stack } from "@/design-system";
 import { LoginForm } from "../components/LoginForm";
-import { AuthApiError, authApi } from "../authApi";
+import { AuthApiError } from "../authApi";
+import { useAuth } from "../hooks";
 import { loginLabels } from "../labels";
 import { AUTH_ERROR_MESSAGES } from "../messages";
 
 /** `/login`: signs in, then continues to 2FA, email verification or the app. */
 export function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const params = useSearchParams();
   const notice = params.get("reset")
     ? "Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới."
@@ -28,7 +30,7 @@ export function LoginScreen() {
     setIsSubmitting(true);
     setError(undefined);
     try {
-      const result = await authApi.login(values);
+      const result = await login(values);
       if (result.status === "mfa_required") {
         router.push(
           `/mfa-challenge?ticket=${encodeURIComponent(result.mfaToken)}`,
@@ -36,7 +38,6 @@ export function LoginScreen() {
         return;
       }
       router.push("/");
-      router.refresh();
     } catch (caught) {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";
       if (code === "email_not_verified") {

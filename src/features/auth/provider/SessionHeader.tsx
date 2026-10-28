@@ -1,8 +1,7 @@
 "use client";
 
 import { AppHeader, type AppHeaderProps } from "@/features/header";
-import { getKeycloak } from "../keycloak";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "../hooks";
 
 export type SessionHeaderProps = Omit<
   AppHeaderProps,
@@ -11,31 +10,28 @@ export type SessionHeaderProps = Omit<
 
 /**
  * The app header driven by the session: signed-in visitors get their account
- * menu and a logout that ends the Keycloak session; everyone else gets
- * sign-in and sign-up in the avatar menu.
+ * menu and a logout that ends the session; everyone else (including while the
+ * session is still being restored) gets the sign-in button.
  */
 export function SessionHeader({
   score,
   profileBadge,
   ...props
 }: SessionHeaderProps) {
-  const { status, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
-  if (status !== "authenticated") {
-    return <AppHeader {...props} isSignedOut={status !== "authenticating"} />;
+  if (!isAuthenticated || !user) {
+    // Also while the first session check runs: until a session is confirmed
+    // the visitor is shown as signed out, never as a nameless avatar.
+    return <AppHeader {...props} isSignedOut />;
   }
-
-  const claims = getKeycloak().tokenParsed;
-  const email = typeof claims?.email === "string" ? claims.email : "";
-  const name =
-    typeof claims?.name === "string" && claims.name ? claims.name : email;
 
   return (
     <AppHeader
       {...props}
       score={score}
       profileBadge={profileBadge}
-      user={{ name, email }}
+      user={{ name: user.name || user.email, email: user.email }}
       onLogout={logout}
     />
   );

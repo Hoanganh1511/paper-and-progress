@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SkipLink, ThemeScript } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
+import { HideOnRoutes } from "./HideOnRoutes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,13 +50,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             score={SAMPLE_SCORE}
             profileBadge={SAMPLE_PROFILE_BADGE}
           />
-          {/* Grows to fill short pages, so the footer stays at the bottom. */}
-          <div className="flex-1">{children}</div>
-          <AppFooter
-            zaloHref={ZALO_SUPPORT_URL}
-            communityHref={FACEBOOK_COMMUNITY_URL}
-            fanpageHref={FANPAGE_URL}
-          />
+          {/* Grows to fill short pages, so the footer stays at the bottom. A
+              column, so a page can in turn grow to fill it (e.g. to centre). */}
+          <div className="flex flex-1 flex-col">{children}</div>
+          {/* These pages fill exactly one screen, so no footer below them. */}
+          <HideOnRoutes paths={["/devlog"]}>
+            <AppFooter
+              zaloHref={ZALO_SUPPORT_URL}
+              communityHref={FACEBOOK_COMMUNITY_URL}
+              fanpageHref={FANPAGE_URL}
+            />
+          </HideOnRoutes>
         </AuthProvider>
       </body>
     </html>

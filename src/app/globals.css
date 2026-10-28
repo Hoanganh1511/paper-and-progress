@@ -49,6 +49,7 @@
   --color-surface-card: #ffffff;
   --color-surface-overlay: #ffffff;
   --color-surface-sunken: #e5e2da;
+  --color-surface-header: #ffffff;
 
   /* Semantic text */
   --color-text-primary: #171717;
@@ -60,6 +61,8 @@
   /* Semantic borders */
   --color-border-default: #d6d6d0;
   --color-border-subtle: #e5e5e0;
+  /* Faint lines of the page's 50px grid: ink at 8%, never solid. */
+  --color-grid-line: rgba(23, 23, 23, 0.08);
   --color-border-strong: #171717;
   --color-border-focus: #8caeff;
 
@@ -105,7 +108,7 @@
   /* Container widths */
   --width-container-narrow: 40rem;
   --width-container-default: 64rem;
-  --width-container-wide: 80rem;
+  --width-container-wide: 90rem;
 
   /* Height-compact */
   --height-compact: 2rem;
@@ -140,6 +143,42 @@
   --ease-default: ease-out;
   --ease-in-out: ease-in-out;
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* "Bling" twinkle for decorative sparkle icons */
+  --animate-twinkle: twinkle 1.6s ease-in-out infinite;
+
+  /* Endless upward drift for AutoScroll: it moves by one copy of its content
+     (--auto-scroll-distance) and starts over, so the loop has no seam. The
+     duration is set per element from the distance and the speed. */
+  --animate-auto-scroll: auto-scroll linear infinite;
+  @keyframes auto-scroll {
+    to {
+      transform: translateY(calc(-1 * var(--auto-scroll-distance, 0px)));
+    }
+  }
+
+  /* Page-load "unpress": starts pressed flat (shifted by the shadow offset,
+     no shadow) and rises to its resting look. There is no `to` frame, so it
+     ends on whatever shadow the element normally has. Stagger with
+     `[animation-delay:...]`. */
+  --animate-unpress: unpress 300ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  @keyframes unpress {
+    from {
+      translate: 4px 4px;
+      box-shadow: none;
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.7) rotate(25deg);
+    }
+  }
 }
 
 /* ===== DARK MODE ===== */
@@ -157,6 +196,7 @@
   --color-surface-card: #262626;
   --color-surface-overlay: #303030;
   --color-surface-sunken: #141414;
+  --color-surface-header: #262626;
 
   --color-text-primary: #f5f5f5;
   --color-text-secondary: #d4d4d4;
@@ -167,6 +207,7 @@
   --color-border-default: #404040;
   --color-border-subtle: #333333;
   --color-border-strong: #e5e5e5;
+  --color-grid-line: rgba(245, 245, 245, 0.07);
 
   --color-action-primary: #f5f5f5;
   --color-action-primary-hover: #e5e5e5;
@@ -203,6 +244,7 @@
     --color-surface-card: #262626;
     --color-surface-overlay: #303030;
     --color-surface-sunken: #141414;
+    --color-surface-header: #262626;
     --color-text-primary: #f5f5f5;
     --color-text-secondary: #d4d4d4;
     --color-text-muted: #a3a3a3;
@@ -211,6 +253,7 @@
     --color-border-default: #404040;
     --color-border-subtle: #333333;
     --color-border-strong: #e5e5e5;
+    --color-grid-line: rgba(245, 245, 245, 0.07);
     --color-action-primary: #f5f5f5;
     --color-action-primary-hover: #e5e5e5;
     --color-action-primary-active: #d4d4d4;
@@ -244,6 +287,58 @@
 /* ===== BASE STYLES ===== */
 body {
   background-color: var(--color-surface-page);
+  /* A 50px x 50px square grid of 1px lines, drawn with two gradients. */
+  background-image:
+    linear-gradient(var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid-line) 1px, transparent 1px);
+  background-size: 50px 50px;
   color: var(--color-text-primary);
   font-family: var(--font-body);
+}
+
+/* ===== SCROLLBAR (neo-brutalism) ===== */
+/* Hard 2px ink borders, a flat track and a chunky accent thumb. Colours come
+   from the semantic tokens, so light and dark mode follow automatically. */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: var(--color-accent-lime) var(--color-surface-sunken);
+}
+
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-sunken);
+  border-left: 2px solid var(--color-border-strong);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-lime);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-yellow);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--color-accent-pink);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-surface-sunken);
+  border-top: 2px solid var(--color-border-strong);
+  border-left: 2px solid var(--color-border-strong);
+}
+
+/* Chromium 121+ honours the standard properties and would ignore the
+   pseudo-elements above, so only Firefox keeps them. */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: unset;
+    scrollbar-color: unset;
+  }
 }

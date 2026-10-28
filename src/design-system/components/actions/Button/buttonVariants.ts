@@ -7,16 +7,18 @@ import { focusRingClasses } from "../../../primitives/FocusRing";
 // Class names are written out in full so Tailwind can detect them statically.
 // compact/default are shorter than 44px, so a ::before pseudo-element extends
 // the hit area to the minimum touch target without changing the visual size.
-// Neo-brutalist press: a hard offset shadow that collapses while the button
-// is pressed, the way a sticker is pushed flat. Ghost buttons stay flat.
+// Neo-brutalist press: on hover the button slides by the shadow's own offset
+// (4px, see --shadow-accent) while the hard shadow collapses, so it sits flat
+// where its shadow was, like a sticker pushed down. Pressing keeps that
+// state. Ghost buttons stay flat.
 const PRESSABLE =
-  "border-2 border-border-strong shadow-accent transition-[background-color,box-shadow,translate] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:shadow-none motion-reduce:transition-none";
+  "border-2 border-border-strong shadow-accent transition-[background-color,box-shadow,translate] hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1 active:translate-y-1 active:shadow-none disabled:shadow-none motion-reduce:transition-none";
 
 export const buttonVariants = cva(
   [
     "inline-flex shrink-0 items-center justify-center gap-2 border-2 border-transparent",
     "rounded-standard font-body font-medium whitespace-nowrap no-underline",
-    "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)]",
+    "transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)]",
     "cursor-pointer disabled:pointer-events-none disabled:opacity-50",
     "aria-busy:cursor-progress",
     focusRingClasses,

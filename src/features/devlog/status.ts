@@ -1,8 +1,11 @@
 import type {
   DevlogEntry,
   DevlogModule,
+  DevlogProject,
   DevlogStatus,
+  PeriodProgress,
   ProjectStatus,
+  ProjectSummary,
 } from "./types";
 
 /** The parts of the project the overview tracks, in display order. */
@@ -17,6 +20,18 @@ export const STATUS_LABELS: Record<DevlogStatus, string> = {
   in_progress: "Đang làm",
   done: "Hoàn thành",
 };
+
+export function getModuleLabel(moduleId: string) {
+  return (
+    DEVLOG_MODULES.find((module) => module.id === moduleId)?.label ?? moduleId
+  );
+}
+
+/** The first paragraph of the entry, which cards show as its summary. */
+export function getEntrySummary(entry: DevlogEntry) {
+  const first = entry.body.find((block) => block.type === "paragraph");
+  return first?.type === "paragraph" ? first.text : "";
+}
 
 /** `2026-10-27` → `27/10/2026`. */
 export function formatDevlogDate(date: string) {
@@ -73,16 +88,121 @@ export function computeProjectStatus(
   };
 }
 
-/** Entries of the chosen modules AND carrying any of the chosen tags. */
-export function filterEntries(
-  entries: DevlogEntry[],
-  filters: { module?: string[]; tag?: string[] },
-) {
+export interface DevlogFilters {
+  module?: string[];
+  tag?: string[];
+  status?: string[];
+  /** Words that must all appear in the title, text, tags or module name. */
+  query?: string;
+}
+
+/**
+ * Entries of the chosen modules AND carrying any of the chosen tags AND in
+ * any of the chosen statuses AND containing every word of `query`.
+ */
+export function filterEntries(entries: DevlogEntry[], filters: DevlogFilters) {
   const modules = filters.module ?? [];
   const tags = filters.tag ?? [];
-  return entries.filter(
-    (entry) =>
-      (modules.length === 0 || modules.includes(entry.module)) &&
-      (tags.length === 0 || entry.tags.some((tag) => tags.includes(tag))),
-  );
+  const statuses = filters.status ?? [];
+  const words = (filters.query ?? "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return entries.filter((entry) => {
+    if (modules.length > 0 && !modules.includes(entry.module)) return false;
+    if (tags.length > 0 && !entry.tags.some((tag) => tags.includes(tag)))
+      return false;
+    if (statuses.length > 0 && !statuses.includes(entry.status)) return false;
+    if (words.length === 0) return true;
+    const text = [
+      entry.title,
+      getModuleLabel(entry.module),
+      entry.tags.join(" "),
+      entry.body
+        .map((block) =>
+          block.type === "paragraph"
+            ? block.text
+            : block.type === "list"
+              ? block.items.join(" ")
+              : "",
+        )
+        .join(" "),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return words.every((word) => text.includes(word));
+  });
+}
+
+/** Counts, progress and latest date of each project, from all entries. */
+export function computeProjectSummaries(
+  entries: DevlogEntry[],
+  projects: DevlogProject[],
+): ProjectSummary[] {
+  const newestFirst = sortEntries(entries);
+  return projects.map((project) => {
+    const own = newestFirst.filter((entry) => entry.module === project.id);
+    return {
+      ...project,
+      entryCount: own.length,
+      doneCount: own.filter((entry) => entry.status === "done").length,
+      inProgressCount: own.filter((entry) => entry.status === "in_progress")
+        .length,
+      progress: own[0]?.progress ?? 0,
+      lastEntryAt: own[0]?.date ?? null,
+    };
+  });
+}
+
+/** `Blog cá nhân` → `custom-blog-ca-nhan`: an id that cannot clash with a module's. */
+export function toCustomProjectId(label: string) {
+  const slug = label
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `custom-${slug || "project"}`;
+}
+
+/**
+ * What moved in the last `days` days, counted back from the newest entry (not
+ * from the clock, so it can be prerendered). A module's gain is its progress
+ * now minus its progress at its last entry before the period.
+ */
+export function computePeriodProgress(
+  entries: DevlogEntry[],
+  days: number,
+  modules: DevlogModule[] = DEVLOG_MODULES,
+): PeriodProgress {
+  const newestFirst = sortEntries(entries);
+  const endsAt = newestFirst[0]?.date ?? null;
+  const firstDay = endsAt ? dayNumber(endsAt) - days + 1 : 0;
+  const isInPeriod = (entry: DevlogEntry) => dayNumber(entry.date) >= firstDay;
+
+  const moduleProgress = modules.map((module) => {
+    const own = newestFirst.filter((entry) => entry.module === module.id);
+    const inPeriod = own.filter(isInPeriod);
+    const before = own.find((entry) => !isInPeriod(entry));
+    const progress = own[0]?.progress ?? 0;
+    return {
+      ...module,
+      progress,
+      gained:
+        inPeriod.length > 0
+          ? Math.max(0, progress - (before?.progress ?? 0))
+          : 0,
+      entryCount: inPeriod.length,
+    };
+  });
+
+  return {
+    days,
+    endsAt,
+    modules: moduleProgress,
+    totalGained: moduleProgress.reduce((sum, m) => sum + m.gained, 0),
+    totalEntries: moduleProgress.reduce((sum, m) => sum + m.entryCount, 0),
+  };
 }

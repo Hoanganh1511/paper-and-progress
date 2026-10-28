@@ -30,6 +30,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("AppHeader", () => {
+  async function openExplore() {
+    await userEvent.click(screen.getByRole("button", { name: "Khám phá" }));
+    // The panel appears once the press animation has finished.
+    await screen.findByRole("navigation", { name: "Điều hướng chính" });
+  }
+
   afterEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove("dark");
@@ -41,8 +47,9 @@ describe("AppHeader", () => {
       pathname.current = "/";
     });
 
-    it("lists the page links in a named navigation", () => {
+    it("lists the page links in a named navigation", async () => {
       setup();
+      await openExplore();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       expect(
         within(nav).getByRole("link", { name: /^Học tập/ }),
@@ -52,9 +59,10 @@ describe("AppHeader", () => {
       ).toHaveAttribute("href", "/goals/tech");
     });
 
-    it("marks the current page, including deeper paths of a section", () => {
+    it("marks the current page, including deeper paths of a section", async () => {
       pathname.current = "/learn";
       const { unmount } = setup();
+      await openExplore();
       expect(
         screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).not.toHaveAttribute("aria-current");
@@ -62,15 +70,17 @@ describe("AppHeader", () => {
 
       pathname.current = "/goals/tech/react";
       setup();
+      await openExplore();
       expect(
         screen.getByRole("link", { name: "Công nghệ thông tin" }),
       ).toHaveAttribute("aria-current", "page");
     });
 
-    it("takes custom items; the goals and call-to-action links stay even when empty", () => {
+    it("takes custom items; the goals and call-to-action links stay even when empty", async () => {
       const { unmount } = setup({
         navItems: [{ label: "Từ điển", href: "/dictionary" }],
       });
+      await openExplore();
       expect(screen.getByRole("link", { name: "Từ điển" })).toHaveAttribute(
         "href",
         "/dictionary",
@@ -78,6 +88,7 @@ describe("AppHeader", () => {
       unmount();
 
       setup({ navItems: [] });
+      await openExplore();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       expect(
         within(nav).getByRole("link", { name: "Mục tiêu tiếng Anh" }),
@@ -115,8 +126,9 @@ describe("AppHeader", () => {
       pathname.current = "/";
     });
 
-    it("is a highlighted link to the English goals page, in the nav bar", () => {
+    it("is a highlighted link to the English goals page, in the nav bar", async () => {
       setup();
+      await openExplore();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       const link = within(nav).getByRole("link", {
         name: "Mục tiêu tiếng Anh",
@@ -128,16 +140,18 @@ describe("AppHeader", () => {
       expect(link).not.toHaveAttribute("aria-current");
     });
 
-    it("marks itself current on the goals page and its subpaths", () => {
+    it("marks itself current on the goals page and its subpaths", async () => {
       pathname.current = "/goals/english/ielts";
       setup();
+      await openExplore();
       expect(
         screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
       ).toHaveAttribute("aria-current", "page");
     });
 
-    it("can point elsewhere", () => {
+    it("can point elsewhere", async () => {
       setup({ goalsHref: "/goals/en" });
+      await openExplore();
       expect(
         screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
       ).toHaveAttribute("href", "/goals/en");
@@ -180,8 +194,9 @@ describe("AppHeader", () => {
       expect(screen.getByRole("search")).toHaveAttribute("action", "/tu-dien");
     });
 
-    it("has a call to action that links to the learning page, in the nav bar", () => {
+    it("has a call to action that links to the learning page, in the nav bar", async () => {
       setup();
+      await openExplore();
       const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
       const link = within(nav).getByRole("link", { name: /Học tập/ });
       expect(link).toHaveAttribute("href", "/learn");
@@ -191,8 +206,9 @@ describe("AppHeader", () => {
       expect(link).toHaveClass("bg-accent-lime");
     });
 
-    it("hides the decorative arrow and heart from its accessible name", () => {
+    it("hides the decorative arrow and heart from its accessible name", async () => {
       setup();
+      await openExplore();
       const link = screen.getByRole("link", { name: /Học tập/ });
       const hidden = Array.from(
         link.querySelectorAll('[aria-hidden="true"]'),
@@ -200,17 +216,19 @@ describe("AppHeader", () => {
       expect(hidden).toEqual(["→", "♡"]);
     });
 
-    it("marks itself current on the learning page and its subpaths", () => {
+    it("marks itself current on the learning page and its subpaths", async () => {
       pathname.current = "/learn/english";
       setup();
+      await openExplore();
       expect(screen.getByRole("link", { name: /^Học tập/ })).toHaveAttribute(
         "aria-current",
         "page",
       );
     });
 
-    it("can lead elsewhere", () => {
+    it("can lead elsewhere", async () => {
       setup({ learnHref: "/start" });
+      await openExplore();
       expect(screen.getByRole("link", { name: /Học tập/ })).toHaveAttribute(
         "href",
         "/start",
@@ -231,10 +249,10 @@ describe("AppHeader", () => {
       expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     });
 
-    it("keeps its name when the label is visually hidden below lg", () => {
+    it("is an icon only; the label stays for screen readers", () => {
       setup();
-      expect(screen.getByText("Facebook Community")).toHaveClass(
-        "sr-only",
+      expect(screen.getByText("Facebook Community")).toHaveClass("sr-only");
+      expect(screen.getByText("Facebook Community")).not.toHaveClass(
         "lg:not-sr-only",
       );
     });
@@ -248,28 +266,20 @@ describe("AppHeader", () => {
   });
 
   describe("signed out", () => {
-    it("offers sign-in and sign-up instead of the account pages", async () => {
-      push.mockClear();
+    it("shows a sign-in button instead of the avatar", () => {
       setup({ isSignedOut: true });
-      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
       expect(
-        screen.queryByRole("menuitem", { name: "Thông tin cá nhân" }),
+        screen.queryByRole("button", { name: /Hồ sơ/ }),
       ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("menuitem", { name: "Đăng xuất" }),
-      ).not.toBeInTheDocument();
-      await userEvent.click(screen.getByRole("menuitem", { name: "Đăng ký" }));
-      expect(push).toHaveBeenCalledWith("/register");
+      expect(screen.getByRole("link", { name: "Đăng nhập" })).toBeVisible();
     });
 
-    it("links sign-in to /login", async () => {
-      push.mockClear();
+    it("links sign-in to /login", () => {
       setup({ isSignedOut: true });
-      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
-      await userEvent.click(
-        screen.getByRole("menuitem", { name: "Đăng nhập" }),
+      expect(screen.getByRole("link", { name: "Đăng nhập" })).toHaveAttribute(
+        "href",
+        "/login",
       );
-      expect(push).toHaveBeenCalledWith("/login");
     });
   });
 
@@ -322,66 +332,6 @@ describe("AppHeader", () => {
       ).toHaveFocus();
       await userEvent.keyboard("{Enter}");
       expect(document.documentElement).toHaveClass("dark");
-    });
-  });
-
-  describe("language", () => {
-    it("shows the current language with its flag", () => {
-      setup();
-      const trigger = screen.getByRole("button", {
-        name: "Ngôn ngữ: Tiếng Việt",
-      });
-      expect(trigger).toHaveAttribute("aria-haspopup", "menu");
-      expect(trigger).toHaveTextContent("Tiếng Việt");
-      expect(
-        trigger.querySelector('svg[viewBox="0 0 30 20"]'),
-      ).toBeInTheDocument();
-    });
-
-    it("lists the languages, marking the current one", async () => {
-      setup();
-      await userEvent.click(screen.getByRole("button", { name: /Ngôn ngữ/ }));
-      const menu = screen.getByRole("menu");
-      expect(
-        within(menu).getByRole("menuitem", {
-          name: /^Tiếng Việt\s*\(đang chọn\)$/,
-        }),
-      ).toBeInTheDocument();
-      expect(
-        within(menu).getByRole("menuitem", { name: "English" }),
-      ).toBeInTheDocument();
-    });
-
-    it("switches language and reports it", async () => {
-      const onLanguageChange = vi.fn();
-      setup({ onLanguageChange });
-      await userEvent.click(screen.getByRole("button", { name: /Ngôn ngữ/ }));
-      await userEvent.click(screen.getByRole("menuitem", { name: "English" }));
-      expect(onLanguageChange).toHaveBeenCalledWith("en");
-      expect(
-        screen.getByRole("button", { name: "Ngôn ngữ: English" }),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-    });
-
-    it("can start in another language and use a custom list", () => {
-      setup({
-        languages: [
-          { code: "vi", label: "Tiếng Việt" },
-          { code: "ja", label: "日本語" },
-        ],
-        defaultLanguage: "ja",
-      });
-      expect(
-        screen.getByRole("button", { name: "Ngôn ngữ: 日本語" }),
-      ).toBeInTheDocument();
-    });
-
-    it("is left out with no languages", () => {
-      setup({ languages: [] });
-      expect(
-        screen.queryByRole("button", { name: /Ngôn ngữ/ }),
-      ).not.toBeInTheDocument();
     });
   });
 
@@ -591,7 +541,7 @@ describe("AppHeader", () => {
       const banner = screen.getByRole("banner");
       expect(banner.className).not.toMatch(/(^|\s)z-/);
 
-      await userEvent.click(screen.getByRole("button", { name: /Ngôn ngữ/ }));
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
       expect(screen.getByRole("menu")).toHaveClass("z-[var(--z-dropdown)]");
     });
 
@@ -692,6 +642,55 @@ describe("AppHeader", () => {
     ).toBeInTheDocument();
   });
 
+  describe("explore", () => {
+    it("presses at once but shows the page links only after the press animation", async () => {
+      setup();
+      const button = screen.getByRole("button", { name: "Khám phá" });
+      expect(button).toHaveAttribute("aria-expanded", "false");
+
+      await userEvent.click(button);
+      expect(button).toHaveAttribute("aria-expanded", "true");
+      expect(
+        screen.queryByRole("navigation", { name: "Điều hướng chính" }),
+      ).not.toBeInTheDocument();
+
+      expect(
+        await screen.findByRole("navigation", { name: "Điều hướng chính" }),
+      ).toBeInTheDocument();
+    });
+
+    it("has a chevron that turns down while the button is pressed open", async () => {
+      setup();
+      const button = screen.getByRole("button", { name: "Khám phá" });
+      const chevron = button.querySelector("svg.lucide-chevron-right");
+      expect(chevron).toHaveAttribute("aria-hidden", "true");
+      expect(chevron).toHaveClass("group-aria-expanded:rotate-90");
+      await userEvent.click(button);
+      expect(button).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("opens on mouse hover, closes on leave", async () => {
+      setup();
+      const button = screen.getByRole("button", { name: "Khám phá" });
+      await userEvent.hover(button);
+      await screen.findByRole("navigation", { name: "Điều hướng chính" });
+      await userEvent.unhover(button);
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(
+        screen.queryByRole("navigation", { name: "Điều hướng chính" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("closes with Escape and returns focus to the button", async () => {
+      setup();
+      await openExplore();
+      await userEvent.keyboard("{Escape}");
+      const button = screen.getByRole("button", { name: "Khám phá" });
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(button).toHaveFocus();
+    });
+  });
+
   it("receives ref via props and merges className", () => {
     const ref = createRef<HTMLElement>();
     setup({ ref, className: "custom-class" });
@@ -703,11 +702,11 @@ describe("AppHeader", () => {
     setup({ unreadNotifications: 1 });
     const order = [
       /^Baolingo$/,
+      /^Khám phá$/,
       /^Từ điển$/,
-      /^Facebook Community/,
-      /^Ngôn ngữ: Tiếng Việt$/,
       /^Thông báo, có tin chưa đọc$/,
       /^Hồ sơ, 1 mục mới$/,
+      /^Facebook Community/,
     ];
     for (const name of order) {
       await userEvent.tab();
@@ -715,10 +714,10 @@ describe("AppHeader", () => {
     }
   });
 
-  it("has no accessibility violations, closed and with the language menu open", async () => {
+  it("has no accessibility violations, closed and with the account menu open", async () => {
     const { container } = setup({ unreadNotifications: 2, isSticky: true });
     expect(await axe(container)).toHaveNoViolations();
-    await userEvent.click(screen.getByRole("button", { name: /Ngôn ngữ/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
     expect(await axe(container)).toHaveNoViolations();
   });
 });

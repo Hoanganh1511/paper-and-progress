@@ -45,3 +45,41 @@ export interface ProjectStatus {
   /** Date of the first entry, `YYYY-MM-DD`; `null` without entries. */
   startedAt: string | null;
 }
+
+/** A project the devlog groups entries under; an entry's `module` is its id. */
+export interface DevlogProject {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface ProjectSummary extends DevlogProject {
+  /** Entries logged under the project. */
+  entryCount: number;
+  doneCount: number;
+  inProgressCount: number;
+  /** Progress after the project's newest entry; 0 without entries. */
+  progress: number;
+  /** Date of the newest entry, `YYYY-MM-DD`; `null` without entries. */
+  lastEntryAt: string | null;
+}
+
+/** How far one module moved over a period of days. */
+export interface PeriodModuleProgress extends DevlogModule {
+  /** Progress after the module's newest entry. */
+  progress: number;
+  /** Points gained inside the period; 0 when nothing was logged in it. */
+  gained: number;
+  /** Entries logged inside the period. */
+  entryCount: number;
+}
+
+export interface PeriodProgress {
+  /** Length of the period in days, counted back from `endsAt` inclusive. */
+  days: number;
+  /** Date of the newest entry, `YYYY-MM-DD`; `null` without entries. */
+  endsAt: string | null;
+  modules: PeriodModuleProgress[];
+  totalGained: number;
+  totalEntries: number;
+}

@@ -1,3 +1,4 @@
+export * from "./AutoScroll";
 export * from "./Badge";
 export * from "./Card";
 export * from "./Carousel";

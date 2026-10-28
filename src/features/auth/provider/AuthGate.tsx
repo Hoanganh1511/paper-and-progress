@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AuthSplash } from "../components/AuthSplash";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "../hooks";
 
 export interface AuthGateProps {
   children: ReactNode;
@@ -16,7 +16,7 @@ export interface AuthGateProps {
  * user is signed in, and sends everyone else to the sign-in page.
  */
 export function AuthGate({ children, signInHref = "/login" }: AuthGateProps) {
-  const { status } = useAuth();
+  const { status, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +24,6 @@ export function AuthGate({ children, signInHref = "/login" }: AuthGateProps) {
   }, [status, router, signInHref]);
 
   // The expired dialog sits on top of the page the user was working on.
-  if (status === "authenticated" || status === "expired") return children;
+  if (isAuthenticated || status === "expired") return children;
   return <AuthSplash />;
 }

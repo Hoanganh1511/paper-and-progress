@@ -128,6 +128,26 @@ describe("globals.css theme tokens", () => {
     );
     expect(block("body {")).toMatch(/color:\s*var\(--color-text-primary\)/);
   });
+
+  it("draws a 50px square grid on the page with faint 1px lines", () => {
+    const body = block("body {");
+    expect(body).toMatch(/background-size:\s*50px 50px/);
+    // One gradient for the horizontal lines and one for the vertical ones.
+    expect(body.match(/linear-gradient\(/g)).toHaveLength(2);
+    expect(body).toMatch(/var\(--color-grid-line\) 1px/);
+
+    // Translucent in light and dark, never a solid colour.
+    const alpha = (css: string) =>
+      Number(/--color-grid-line:\s*rgba\([^)]*,\s*([\d.]+)\)/.exec(css)?.[1]);
+    [
+      css,
+      block(".dark {"),
+      block("@media (prefers-color-scheme: dark)"),
+    ].forEach((source) => {
+      expect(alpha(source)).toBeGreaterThan(0);
+      expect(alpha(source)).toBeLessThanOrEqual(0.12);
+    });
+  });
   it("keeps white text readable on every illustrated-card theme color and its badge color", () => {
     const themes = Object.keys(light).filter((name) =>
       name.startsWith("--color-theme-"),

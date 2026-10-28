@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -12,84 +10,81 @@ import {
 import { useRouter } from "next/navigation";
 import { Dialog } from "@/design-system";
 import { SessionExpired } from "../components/SessionExpired";
-import { getKeycloak } from "../keycloak";
-
-/**
- * - `authenticating`: the first session check has not finished yet
- * - `expired`: a session existed and could no longer be refreshed
- * - `suspended`: the backend reported the account as locked
- */
-export type AuthStatus =
-  | "authenticating"
-  | "authenticated"
-  | "unauthenticated"
-  | "expired"
-  | "suspended";
-
-export interface AuthContextValue {
-  status: AuthStatus;
-  /** Marks the session as expired, e.g. after an API call answered 401. */
-  markExpired: () => void;
-  /** Marks the account as suspended, e.g. after an API call answered 403 `account_suspended`. */
-  markSuspended: () => void;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-/** Seconds of token life left below which the token is renewed. */
-const MIN_TOKEN_VALIDITY = 30;
-
-// keycloak-js throws when `init` runs twice (React strict mode mounts effects
-// twice in development), so every mount shares one initialization.
-let initPromise: Promise<boolean> | undefined;
-
-function initKeycloak() {
-  initPromise ??= getKeycloak().init({
-    onLoad: "check-sso",
-    silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-    pkceMethod: "S256",
-    checkLoginIframe: false,
-  });
-  return initPromise;
-}
+import {
+  clearTokens,
+  getMeApi,
+  getRefreshToken,
+  loginApi,
+  logoutApi,
+  refreshSession,
+  registerApi,
+  setSessionHandlers,
+  setTokens,
+  verifyMfaApi,
+  type AuthTokens,
+  type User,
+} from "../authApi";
+import {
+  AuthContext,
+  type AuthContextValue,
+  type AuthStatus,
+} from "./AuthContext";
 
 export interface AuthProviderProps {
   children: ReactNode;
 }
 
 /**
- * Checks for an existing Keycloak session, renews the token in the
- * background, and owns the app-wide session states: the "session expired"
- * dialog and the redirect to the suspended-account page. It never blocks
- * rendering; wrap protected content in `AuthGate` to wait for the check.
+ * Restores the session from the stored refresh token, owns the signed-in
+ * user, and the app-wide session states: the "session expired" dialog and the
+ * redirect to the suspended-account page. It never blocks rendering; wrap
+ * protected content in `AuthGate` to wait for the restore.
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("authenticating");
 
   useEffect(() => {
     let isActive = true;
-    const keycloak = getKeycloak();
 
-    initKeycloak()
-      .then((isAuthenticated) => {
+    setSessionHandlers({
+      onSessionExpired: () => {
+        if (!isActive) return;
+        setStatus((current) =>
+          current === "authenticated" ? "expired" : current,
+        );
+      },
+      onAccountSuspended: () => {
+        if (!isActive) return;
+        setUser(null);
+        setStatus("suspended");
+      },
+    });
+
+    async function restore() {
+      if (!getRefreshToken()) {
+        setStatus("unauthenticated");
+        return;
+      }
+      try {
+        // The access token lives in memory only, so a reload starts from the refresh token.
+        await refreshSession();
+        const me = await getMeApi();
         if (isActive) {
-          setStatus(isAuthenticated ? "authenticated" : "unauthenticated");
+          setUser(me);
+          setStatus("authenticated");
         }
-      })
-      // Keycloak unreachable: treat the visitor as signed out, not as broken.
-      .catch(() => isActive && setStatus("unauthenticated"));
-
-    keycloak.onTokenExpired = () => {
-      keycloak.updateToken(MIN_TOKEN_VALIDITY).catch(() => {
-        if (isActive) setStatus("expired");
-      });
-    };
+      } catch {
+        // Rejected or backend unreachable: treat the visitor as signed out, not as broken.
+        if (isActive) setStatus("unauthenticated");
+      }
+    }
+    void restore();
 
     return () => {
       isActive = false;
-      keycloak.onTokenExpired = undefined;
+      setSessionHandlers({});
     };
   }, []);
 
@@ -97,24 +92,64 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (status === "suspended") router.replace("/account-suspended");
   }, [status, router]);
 
-  const markExpired = useCallback(
-    () =>
-      setStatus((current) =>
-        current === "authenticated" ? "expired" : current,
-      ),
-    [],
-  );
-  const markSuspended = useCallback(() => setStatus("suspended"), []);
-  const logout = useCallback(async () => {
-    setStatus("unauthenticated");
-    await getKeycloak().logout({
-      redirectUri: `${window.location.origin}/login`,
-    });
+  const startSession = useCallback(async (tokens: AuthTokens) => {
+    // Keep the old refresh token when the backend does not rotate it.
+    const refreshToken = tokens.refreshToken ?? getRefreshToken();
+    if (!refreshToken) throw new Error("The backend sent no refresh token");
+    setTokens(tokens.accessToken, refreshToken);
+    try {
+      setUser(await getMeApi());
+    } catch (error) {
+      clearTokens();
+      throw error;
+    }
+    setStatus("authenticated");
   }, []);
 
-  const value = useMemo(
-    () => ({ status, markExpired, markSuspended, logout }),
-    [status, markExpired, markSuspended, logout],
+  const login = useCallback<AuthContextValue["login"]>(
+    async ({ email, password, rememberMe }) => {
+      const result = await loginApi(email, password, rememberMe);
+      if (result.status === "mfa_required") return result;
+      await startSession(result.tokens);
+      return { status: "authenticated" };
+    },
+    [startSession],
+  );
+
+  const register = useCallback<AuthContextValue["register"]>(
+    async ({ name, email, password }) => {
+      await registerApi(name, email, password);
+    },
+    [],
+  );
+
+  const verifyMfa = useCallback<AuthContextValue["verifyMfa"]>(
+    async (values) => startSession(await verifyMfaApi(values)),
+    [startSession],
+  );
+
+  const logout = useCallback(async () => {
+    const refreshToken = getRefreshToken();
+    // Local state is cleared first: signing out must work even if the backend does not answer.
+    clearTokens();
+    setUser(null);
+    setStatus("unauthenticated");
+    if (refreshToken) await logoutApi(refreshToken).catch(() => undefined);
+    router.replace("/login");
+  }, [router]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isAuthenticated: status === "authenticated",
+      isLoading: status === "authenticating",
+      status,
+      login,
+      register,
+      verifyMfa,
+      logout,
+    }),
+    [user, status, login, register, verifyMfa, logout],
   );
 
   return (
@@ -133,6 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           description="Phiên đăng nhập hết hạn, vui lòng đăng nhập lại."
           signInLabel="Đăng nhập lại"
           onSignIn={() => {
+            setUser(null);
             setStatus("unauthenticated");
             router.push("/login");
           }}
@@ -140,10 +176,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
       </Dialog>
     </AuthContext>
   );
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside <AuthProvider>");
-  return context;
 }
