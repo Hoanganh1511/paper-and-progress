@@ -247,6 +247,32 @@ describe("AppHeader", () => {
     });
   });
 
+  describe("signed out", () => {
+    it("offers sign-in and sign-up instead of the account pages", async () => {
+      push.mockClear();
+      setup({ isSignedOut: true });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(
+        screen.queryByRole("menuitem", { name: "Thông tin cá nhân" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("menuitem", { name: "Đăng xuất" }),
+      ).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole("menuitem", { name: "Đăng ký" }));
+      expect(push).toHaveBeenCalledWith("/register");
+    });
+
+    it("links sign-in to /login", async () => {
+      push.mockClear();
+      setup({ isSignedOut: true });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Đăng nhập" }),
+      );
+      expect(push).toHaveBeenCalledWith("/login");
+    });
+  });
+
   describe("dark mode", () => {
     async function openMenuAndFindSwitch() {
       await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));

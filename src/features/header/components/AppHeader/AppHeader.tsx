@@ -16,12 +16,14 @@ import {
   ChevronDown,
   GraduationCap,
   Laptop,
+  LogIn,
   LogOut,
   type LucideIcon,
   Moon,
   Settings,
   Sun,
   User,
+  UserPlus,
   Zap,
 } from "lucide-react";
 import {
@@ -114,6 +116,9 @@ export interface AppHeaderLabels {
   profileInfo: string;
   bookmarks: string;
   settings: string;
+  /** Menu entries shown instead of the account pages while signed out. */
+  signIn: string;
+  signUp: string;
   logout: string;
   logoutTitle: string;
   logoutDescription: string;
@@ -147,6 +152,8 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   profileInfo: "Thông tin cá nhân",
   bookmarks: "Bookmarks",
   settings: "Cài đặt",
+  signIn: "Đăng nhập",
+  signUp: "Đăng ký",
   logout: "Đăng xuất",
   logoutTitle: "Đăng xuất khỏi tài khoản?",
   logoutDescription: "Bạn sẽ cần đăng nhập lại để tiếp tục học.",
@@ -188,6 +195,10 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   settingsHref?: string;
   /** Shown at the top of the account menu; the section is left out when omitted. */
   user?: HeaderUser;
+  /** Replaces the account pages and logout in the avatar menu with sign-in and sign-up. */
+  isSignedOut?: boolean;
+  signInHref?: string;
+  signUpHref?: string;
   /** Called after the user confirms logging out. */
   onLogout?: () => void;
   /** Small number on the avatar; hidden when 0 or omitted. */
@@ -243,6 +254,9 @@ export function AppHeader({
   bookmarksHref = "/bookmarks",
   settingsHref = "/settings",
   user,
+  isSignedOut = false,
+  signInHref = "/login",
+  signUpHref = "/register",
   onLogout,
   profileBadge,
   navItems = defaultHeaderNavItems,
@@ -465,7 +479,7 @@ export function AppHeader({
                   "max-md:fixed max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:mt-0 max-md:w-full max-md:origin-bottom max-md:rounded-b-none max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:starting:translate-y-4 max-md:starting:scale-100",
                 )}
               >
-                {user && (
+                {user && !isSignedOut && (
                   <div
                     role="presentation"
                     className="mb-1 flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-lime p-3 text-ink"
@@ -483,23 +497,46 @@ export function AppHeader({
                     </div>
                   </div>
                 )}
-                <MenuLabel>{labels.accountPages}</MenuLabel>
-                <MenuItem icon={User} onSelect={() => router.push(profileHref)}>
-                  {labels.profileInfo}
-                </MenuItem>
-                <MenuItem
-                  icon={Bookmark}
-                  onSelect={() => router.push(bookmarksHref)}
-                >
-                  {labels.bookmarks}
-                </MenuItem>
-                <MenuItem
-                  icon={Settings}
-                  onSelect={() => router.push(settingsHref)}
-                >
-                  {labels.settings}
-                </MenuItem>
-                <MenuSeparator />
+                {isSignedOut ? (
+                  <>
+                    <MenuItem
+                      icon={LogIn}
+                      onSelect={() => router.push(signInHref)}
+                    >
+                      {labels.signIn}
+                    </MenuItem>
+                    <MenuItem
+                      icon={UserPlus}
+                      onSelect={() => router.push(signUpHref)}
+                    >
+                      {labels.signUp}
+                    </MenuItem>
+                    <MenuSeparator />
+                  </>
+                ) : (
+                  <>
+                    <MenuLabel>{labels.accountPages}</MenuLabel>
+                    <MenuItem
+                      icon={User}
+                      onSelect={() => router.push(profileHref)}
+                    >
+                      {labels.profileInfo}
+                    </MenuItem>
+                    <MenuItem
+                      icon={Bookmark}
+                      onSelect={() => router.push(bookmarksHref)}
+                    >
+                      {labels.bookmarks}
+                    </MenuItem>
+                    <MenuItem
+                      icon={Settings}
+                      onSelect={() => router.push(settingsHref)}
+                    >
+                      {labels.settings}
+                    </MenuItem>
+                    <MenuSeparator />
+                  </>
+                )}
                 <MenuLabel>{labels.accountPreferences}</MenuLabel>
                 {/* A switch in a menu: it stays open so the change can be seen. */}
                 <MenuItem
@@ -538,14 +575,18 @@ export function AppHeader({
                     </span>
                   </span>
                 </MenuItem>
-                <MenuSeparator />
-                <MenuItem
-                  icon={LogOut}
-                  destructive
-                  onSelect={() => setIsLogoutOpen(true)}
-                >
-                  {labels.logout}
-                </MenuItem>
+                {!isSignedOut && (
+                  <>
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={LogOut}
+                      destructive
+                      onSelect={() => setIsLogoutOpen(true)}
+                    >
+                      {labels.logout}
+                    </MenuItem>
+                  </>
+                )}
               </MenuContent>
             </DropdownMenu>
           </div>

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SkipLink, ThemeScript } from "@/design-system";
+import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
-import { AppHeader } from "@/features/header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,16 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 // Placeholder values until the header is fed by the signed-in user's data
-// (score, unread count) and the footer links point at the real pages.
+// (score, unread count); the user itself comes from the Keycloak session and the footer links point at the real pages.
 const FACEBOOK_COMMUNITY_URL = "https://www.facebook.com/";
 const ZALO_SUPPORT_URL = "https://zalo.me/";
 const FANPAGE_URL = "https://www.facebook.com/";
 const SAMPLE_SCORE = 227;
 const SAMPLE_PROFILE_BADGE = 1;
-const SAMPLE_USER = {
-  name: "Nguyễn Văn A",
-  email: "nguyenva@email.com",
-};
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -46,20 +42,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* First in the page, so keyboard users can jump past the header. */}
         <SkipLink lang="vi">Bỏ qua đến nội dung chính</SkipLink>
-        <AppHeader
-          isSticky
-          facebookHref={FACEBOOK_COMMUNITY_URL}
-          score={SAMPLE_SCORE}
-          profileBadge={SAMPLE_PROFILE_BADGE}
-          user={SAMPLE_USER}
-        />
-        {/* Grows to fill short pages, so the footer stays at the bottom. */}
-        <div className="flex-1">{children}</div>
-        <AppFooter
-          zaloHref={ZALO_SUPPORT_URL}
-          communityHref={FACEBOOK_COMMUNITY_URL}
-          fanpageHref={FANPAGE_URL}
-        />
+        <AuthProvider>
+          <SessionHeader
+            isSticky
+            facebookHref={FACEBOOK_COMMUNITY_URL}
+            score={SAMPLE_SCORE}
+            profileBadge={SAMPLE_PROFILE_BADGE}
+          />
+          {/* Grows to fill short pages, so the footer stays at the bottom. */}
+          <div className="flex-1">{children}</div>
+          <AppFooter
+            zaloHref={ZALO_SUPPORT_URL}
+            communityHref={FACEBOOK_COMMUNITY_URL}
+            fanpageHref={FANPAGE_URL}
+          />
+        </AuthProvider>
       </body>
     </html>
   );
