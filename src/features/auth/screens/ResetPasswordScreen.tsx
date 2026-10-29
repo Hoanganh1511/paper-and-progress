@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ResetPasswordForm } from "../components/ResetPasswordForm";
-import { AuthApiError, authApi } from "../authApi";
-import { AUTH_ERROR_MESSAGES } from "../messages";
+import { authApi } from "../authApi";
+import { AUTH_ERROR_MESSAGES, describeAuthError } from "../messages";
 
 /** `/reset-password?token=…`: sets the new password, then goes to sign-in. */
 export function ResetPasswordScreen() {
@@ -21,8 +21,7 @@ export function ResetPasswordScreen() {
       await authApi.resetPassword({ token, password });
       router.push("/login?reset=1");
     } catch (caught) {
-      const code = caught instanceof AuthApiError ? caught.code : "unknown";
-      setError(AUTH_ERROR_MESSAGES[code]);
+      setError(describeAuthError(caught));
       setIsSubmitting(false);
     }
   }

@@ -93,6 +93,8 @@ export interface RegisterFormProps extends Omit<
   errors?: Partial<Record<RegisterField, string>>;
   minPasswordLength?: number;
   signInHref?: string;
+  /** Extra content between the submit button and the sign-in link, e.g. social sign-up. */
+  footer?: ReactNode;
   /** Replace any of the texts (translations). `{min}` is the minimum password length. */
   labels?: Partial<RegisterFormLabels>;
 }
@@ -109,6 +111,7 @@ export function RegisterForm({
   errors: serverErrors,
   minPasswordLength = 8,
   signInHref,
+  footer,
   labels: labelOverrides,
   ref,
   ...props
@@ -251,6 +254,7 @@ export function RegisterForm({
         >
           {labels.submit}
         </Button>
+        {footer}
         {signInHref && (
           <Text size="body-md" color="secondary" className="text-center">
             {labels.haveAccount}{" "}

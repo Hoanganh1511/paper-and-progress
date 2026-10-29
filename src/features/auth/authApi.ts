@@ -16,6 +16,8 @@ export type AuthErrorCode =
   | "invalid_code"
   | "rate_limited"
   | "account_suspended"
+  /** The backend rejected the input; `serverMessage` says which rule it broke. */
+  | "validation"
   | "network"
   | "unknown";
 
@@ -36,12 +38,15 @@ export class AuthApiError extends Error {
   readonly fieldErrors: Record<string, string>;
   /** Seconds to wait before retrying; only set on a 429. */
   readonly retryAfter?: number;
+  /** What the backend wrote in `message`, joined when it sent several. */
+  readonly serverMessage?: string;
 
   constructor(
     code: AuthErrorCode,
     status = 0,
     fieldErrors: Record<string, string> = {},
     retryAfter?: number,
+    serverMessage?: string,
   ) {
     super(code);
     this.name = "AuthApiError";
@@ -49,6 +54,7 @@ export class AuthApiError extends Error {
     this.status = status;
     this.fieldErrors = fieldErrors;
     this.retryAfter = retryAfter;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -94,6 +100,54 @@ export function getRefreshToken(): string | null {
   return readRefreshToken();
 }
 
+/** Renew this long before the access token expires. */
+const REFRESH_LEAD_MS = 60_000;
+/** Never sooner than this, so a very short-lived token cannot cause a refresh loop. */
+const MIN_REFRESH_DELAY_MS = 5_000;
+
+let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** The `exp` claim of a JWT as epoch milliseconds, or undefined if it cannot be read. */
+export function getTokenExpiry(token: string): number | undefined {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return undefined;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const { exp } = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof exp === "number" ? exp * 1000 : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Renews the session shortly before the access token expires, so a request
+ * never has to fail with 401 first (the 401 handler below stays as a safety
+ * net, e.g. after the computer slept). Each new token schedules the next one.
+ */
+function scheduleRefresh(): void {
+  clearTimeout(refreshTimer);
+  if (typeof window === "undefined" || !accessToken) return;
+  const expiry = getTokenExpiry(accessToken);
+  if (!expiry) return;
+  const remaining = expiry - Date.now();
+  // A minute early; for a token that lives less than two minutes, at half its life.
+  const delay = Math.max(
+    remaining - REFRESH_LEAD_MS,
+    remaining / 2,
+    MIN_REFRESH_DELAY_MS,
+  );
+  refreshTimer = setTimeout(() => {
+    refreshSession().catch((error: unknown) => {
+      // A rejected refresh ends the session; an outage keeps it for the next try.
+      if (error instanceof AuthApiError && isSessionRejection(error)) {
+        sessionHandlers.onSessionExpired?.();
+      }
+    });
+  }, delay);
+}
+
 export function setTokens(access: string, refresh: string): void {
   accessToken = access;
   try {
@@ -101,10 +155,12 @@ export function setTokens(access: string, refresh: string): void {
   } catch {
     // Storage blocked (private mode): the session just won't survive a reload.
   }
+  scheduleRefresh();
 }
 
 export function clearTokens(): void {
   accessToken = null;
+  clearTimeout(refreshTimer);
   try {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch {
@@ -136,6 +192,8 @@ export function setSessionHandlers(handlers: SessionHandlers): void {
 
 interface ErrorBody {
   code?: string;
+  /** Nest sends a string, or a list when several validation rules failed. */
+  message?: string | string[];
   errors?: Record<string, string>;
   retryAfter?: number;
 }
@@ -168,10 +226,20 @@ function toAuthApiError(error: unknown): AuthApiError {
   }
   const { status, data } = error.response;
   const body = (typeof data === "object" && data ? data : {}) as ErrorBody;
+  // A list means class-validator turned the input down (400); a plain string
+  // is one the backend wrote itself, and its meaning is told by the status.
+  const isValidation = status === 400 && Array.isArray(body.message);
+  const serverMessage = Array.isArray(body.message)
+    ? body.message.join(" ")
+    : typeof body.message === "string"
+      ? body.message
+      : undefined;
   const code =
     body.code && AUTH_ERROR_CODES.includes(body.code)
       ? (body.code as AuthErrorCode)
-      : codeFromStatus(status, error.config?.url);
+      : isValidation
+        ? "validation"
+        : codeFromStatus(status, error.config?.url);
   return new AuthApiError(
     code,
     status,
@@ -179,6 +247,8 @@ function toAuthApiError(error: unknown): AuthApiError {
     status === 429
       ? parseRetryAfter(body.retryAfter, error.response.headers["retry-after"])
       : undefined,
+
+    serverMessage,
   );
 }
 
@@ -345,7 +415,13 @@ export const loginApi = async (
   );
 
 export const registerApi = (name: string, email: string, password: string) =>
-  call(api.post<unknown>("/auth/register", { name, email, password }));
+  call(
+    api.post<unknown>("/auth/register", {
+      displayName: name,
+      email,
+      password,
+    }),
+  );
 
 export const refreshApi = (refreshToken: string) =>
   call(plainApi.post<AuthTokens>("/auth/refresh", { refreshToken }));
@@ -361,7 +437,17 @@ export const logoutApi = (refreshToken: string) =>
     ),
   );
 
-export const getMeApi = () => call(api.get<User>("/auth/me"));
+/** What `/auth/me` returns; the app calls the display name just `name`. */
+interface MeResponse {
+  id: string;
+  email: string;
+  displayName: string | null;
+}
+
+export const getMeApi = async (): Promise<User> => {
+  const me = await call(api.get<MeResponse>("/auth/me"));
+  return { id: me.id, email: me.email, name: me.displayName };
+};
 
 export const verifyMfaApi = async (values: {
   mfaToken: string;

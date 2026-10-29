@@ -53,3 +53,17 @@ export const forgotPasswordLabels: ComponentProps<
   sentDescription: "Chúng tôi đã gửi link đặt lại mật khẩu tới {email}.",
   resend: "Gửi lại email",
 };
+
+export const socialLoginLabels = {
+  divider: "hoặc",
+  google: "Đăng nhập với Google",
+  facebook: "Đăng nhập với Facebook",
+  github: "Đăng nhập với GitHub",
+};
+
+export const socialRegisterLabels = {
+  divider: "hoặc",
+  google: "Đăng ký với Google",
+  facebook: "Đăng ký với Facebook",
+  github: "Đăng ký với GitHub",
+};

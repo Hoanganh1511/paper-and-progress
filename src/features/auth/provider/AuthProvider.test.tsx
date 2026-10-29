@@ -19,7 +19,7 @@ vi.mock("../authApi", async (importOriginal) => ({
 const ME = { id: "1", email: "a@b.co", name: "An" };
 
 function Probe() {
-  const { user, status, isLoading, login, logout } = useAuth();
+  const { user, status, isLoading, login, logout, loginWithTokens } = useAuth();
   return (
     <div>
       <p data-testid="status">{status}</p>
@@ -29,6 +29,11 @@ function Probe() {
         login
       </button>
       <button onClick={() => logout()}>logout</button>
+      <button
+        onClick={() => loginWithTokens({ accessToken: "a", refreshToken: "r" })}
+      >
+        tokens
+      </button>
     </div>
   );
 }
@@ -110,5 +115,20 @@ describe("AuthProvider", () => {
     expect(screen.getByTestId("user")).toHaveTextContent("none");
     expect(authApi.getRefreshToken()).toBeNull();
     expect(authApi.logoutApi).toHaveBeenCalledWith("r");
+  });
+
+  it("signs in with tokens the backend already issued (social sign-in)", async () => {
+    vi.mocked(authApi.getMeApi).mockResolvedValue(ME);
+    const user = userEvent.setup();
+    renderProvider();
+
+    await user.click(screen.getByRole("button", { name: "tokens" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated"),
+    );
+    expect(authApi.getAccessToken()).toBe("a");
+    expect(authApi.getRefreshToken()).toBe("r");
+    expect(screen.getByTestId("user")).toHaveTextContent("a@b.co");
   });
 });

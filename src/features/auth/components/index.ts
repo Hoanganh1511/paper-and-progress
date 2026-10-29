@@ -7,3 +7,4 @@ export * from "./OTPVerification";
 export * from "./RegisterForm";
 export * from "./ResetPasswordForm";
 export * from "./SessionExpired";
+export * from "./SocialLoginButtons";

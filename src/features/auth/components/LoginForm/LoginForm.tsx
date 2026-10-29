@@ -72,6 +72,8 @@ export interface LoginFormProps extends Omit<
   defaultEmail?: string;
   forgotPasswordHref?: string;
   signUpHref?: string;
+  /** Extra content between the submit button and the sign-up link, e.g. social sign-in. */
+  footer?: ReactNode;
   /** Replace any of the texts (translations). */
   labels?: Partial<LoginFormLabels>;
 }
@@ -89,6 +91,7 @@ export function LoginForm({
   defaultEmail,
   forgotPasswordHref,
   signUpHref,
+  footer,
   labels: labelOverrides,
   ref,
   ...props
@@ -188,6 +191,7 @@ export function LoginForm({
         >
           {labels.submit}
         </Button>
+        {footer}
         {signUpHref && (
           <Text size="body-md" color="secondary" className="text-center">
             {labels.noAccount}{" "}

@@ -128,6 +128,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [startSession],
   );
 
+  const loginWithTokens = useCallback<AuthContextValue["loginWithTokens"]>(
+    (tokens) => startSession(tokens),
+    [startSession],
+  );
+
   const logout = useCallback(async () => {
     const refreshToken = getRefreshToken();
     // Local state is cleared first: signing out must work even if the backend does not answer.
@@ -147,9 +152,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       register,
       verifyMfa,
+      loginWithTokens,
       logout,
     }),
-    [user, status, login, register, verifyMfa, logout],
+    [user, status, login, register, verifyMfa, loginWithTokens, logout],
   );
 
   return (

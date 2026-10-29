@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext } from "react";
-import type { User } from "../authApi";
+import type { AuthTokens, User } from "../authApi";
 
 /**
  * - `authenticating`: the first session check has not finished yet
@@ -44,6 +44,12 @@ export interface AuthContextValue {
     code: string;
     isBackupCode: boolean;
   }) => Promise<void>;
+  /**
+   * Signs in with tokens the backend already issued, e.g. after Google, Facebook
+   * or GitHub sent the visitor back to `/auth/callback`. Throws `AuthApiError`
+   * when the tokens turn out not to work.
+   */
+  loginWithTokens: (tokens: AuthTokens) => Promise<void>;
   logout: () => Promise<void>;
 }
 
