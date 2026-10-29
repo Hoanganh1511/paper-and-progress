@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SkipLink, ThemeScript } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
@@ -16,8 +17,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Developer progress tracker. NODE_ENV is inlined at build time, so in a
+// production build the ternary collapses and the import() below, and with it
+// the whole widget, is left out of the bundle (a plain `import` would keep it).
+const DevTodoWidget =
+  process.env.NODE_ENV === "development"
+    ? dynamic(() =>
+        import("@/features/dev-todos").then((module) => module.DevTodoWidget),
+      )
+    : null;
+
 // Placeholder values until the header is fed by the signed-in user's data
-// (score, unread count); the user itself comes from the Keycloak session and the footer links point at the real pages.
+// (score, unread count); the user itself comes from the signed-in session and the footer links point at the real pages.
 const FACEBOOK_COMMUNITY_URL = "https://www.facebook.com/";
 const ZALO_SUPPORT_URL = "https://zalo.me/";
 const SAMPLE_SCORE = 227;
@@ -60,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             />
           </HideOnRoutes>
         </AuthProvider>
+        {DevTodoWidget && <DevTodoWidget />}
       </body>
     </html>
   );
