@@ -340,12 +340,30 @@ export const loginApi = async (
 ): Promise<LoginResult> =>
   toLoginResult(
     await call(
-      api.post<LoginResponse>("/auth/login", { email, password, rememberMe }),
+      api.post<LoginResponse>("/auth/login", {
+        email,
+        password,
+        rememberMe,
+        ...(recaptchaToken && { recaptchaToken }),
+      }),
     ),
   );
+  recaptchaToken = "",
 
-export const registerApi = (name: string, email: string, password: string) =>
-  call(api.post<unknown>("/auth/register", { name, email, password }));
+export const registerApi = (
+  name: string,
+  email: string,
+  password: string,
+  recaptchaToken = "",
+) =>
+  call(
+    api.post<unknown>("/auth/register", {
+      name,
+      email,
+      password,
+      ...(recaptchaToken && { recaptchaToken }),
+    }),
+  );
 
 export const refreshApi = (refreshToken: string) =>
   call(plainApi.post<AuthTokens>("/auth/refresh", { refreshToken }));
