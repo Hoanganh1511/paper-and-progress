@@ -36,12 +36,15 @@ export class AuthApiError extends Error {
   readonly fieldErrors: Record<string, string>;
   /** Seconds to wait before retrying; only set on a 429. */
   readonly retryAfter?: number;
+  /** The backend's own `message`, shown for errors with no known `code`. */
+  readonly serverMessage?: string;
 
   constructor(
     code: AuthErrorCode,
     status = 0,
     fieldErrors: Record<string, string> = {},
     retryAfter?: number,
+    serverMessage?: string,
   ) {
     super(code);
     this.name = "AuthApiError";
@@ -49,6 +52,7 @@ export class AuthApiError extends Error {
     this.status = status;
     this.fieldErrors = fieldErrors;
     this.retryAfter = retryAfter;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -138,6 +142,7 @@ interface ErrorBody {
   code?: string;
   errors?: Record<string, string>;
   retryAfter?: number;
+  message?: unknown;
 }
 
 function codeFromStatus(status: number, url = ""): AuthErrorCode {
@@ -179,6 +184,7 @@ function toAuthApiError(error: unknown): AuthApiError {
     status === 429
       ? parseRetryAfter(body.retryAfter, error.response.headers["retry-after"])
       : undefined,
+    typeof body.message === "string" ? body.message : undefined,
   );
 }
 
@@ -337,6 +343,7 @@ export const loginApi = async (
   email: string,
   password: string,
   rememberMe = false,
+  recaptchaToken = "",
 ): Promise<LoginResult> =>
   toLoginResult(
     await call(
@@ -348,7 +355,6 @@ export const loginApi = async (
       }),
     ),
   );
-  recaptchaToken = "",
 
 export const registerApi = (
   name: string,

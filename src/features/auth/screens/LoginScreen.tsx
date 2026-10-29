@@ -7,7 +7,7 @@ import { LoginForm } from "../components/LoginForm";
 import { AuthApiError } from "../authApi";
 import { useAuth, useRateLimit } from "../hooks";
 import { loginLabels } from "../labels";
-import { AUTH_ERROR_MESSAGES, rateLimitedMessage } from "../messages";
+import { getAuthErrorMessage, rateLimitedMessage } from "../messages";
 
 /** `/login`: signs in, then continues to 2FA, email verification or the app. */
 export function LoginScreen() {
@@ -52,7 +52,7 @@ export function LoginScreen() {
       } else if (code === "account_suspended") {
         router.push("/account-suspended");
       } else {
-        setError(AUTH_ERROR_MESSAGES[code]);
+        setError(getAuthErrorMessage(caught));
       }
       setIsSubmitting(false);
     }

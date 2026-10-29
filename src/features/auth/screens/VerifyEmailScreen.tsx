@@ -9,8 +9,8 @@ import {
   FormError,
   authLinkClasses,
 } from "../components/shared";
-import { AuthApiError, authApi } from "../authApi";
-import { AUTH_ERROR_MESSAGES } from "../messages";
+import { authApi } from "../authApi";
+import { getAuthErrorMessage } from "../messages";
 
 /** Seconds to show "email verified" before moving on to sign-in. */
 const REDIRECT_DELAY_MS = 2000;
@@ -42,8 +42,7 @@ export function VerifyEmailScreen() {
       .then(() => isActive && setState("verified"))
       .catch((caught) => {
         if (!isActive) return;
-        const code = caught instanceof AuthApiError ? caught.code : "unknown";
-        setError(AUTH_ERROR_MESSAGES[code]);
+        setError(getAuthErrorMessage(caught));
         setState("failed");
       });
     return () => {
@@ -68,8 +67,7 @@ export function VerifyEmailScreen() {
       await authApi.resendVerification(email);
       setHasResent(true);
     } catch (caught) {
-      const code = caught instanceof AuthApiError ? caught.code : "unknown";
-      setError(AUTH_ERROR_MESSAGES[code]);
+      setError(getAuthErrorMessage(caught));
     } finally {
       setIsResending(false);
     }

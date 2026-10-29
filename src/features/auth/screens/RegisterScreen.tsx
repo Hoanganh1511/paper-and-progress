@@ -6,7 +6,11 @@ import { RegisterForm } from "../components/RegisterForm";
 import { AuthApiError } from "../authApi";
 import { useAuth, useRateLimit } from "../hooks";
 import { registerLabels } from "../labels";
-import { AUTH_ERROR_MESSAGES, rateLimitedMessage } from "../messages";
+import {
+  AUTH_ERROR_MESSAGES,
+  getAuthErrorMessage,
+  rateLimitedMessage,
+} from "../messages";
 
 /** `/register`: creates the account, then asks the user to verify their email. */
 export function RegisterScreen() {
@@ -38,7 +42,7 @@ export function RegisterScreen() {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";
       if (code === "email_taken")
         setErrors({ email: AUTH_ERROR_MESSAGES[code] });
-      else setError(AUTH_ERROR_MESSAGES[code]);
+      else setError(getAuthErrorMessage(caught));
       setIsSubmitting(false);
     }
   }
