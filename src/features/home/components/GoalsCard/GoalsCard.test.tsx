@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { computePeriodProgress, type DevlogEntry } from "@/features/devlog";
+import { toLocalDateKey } from "@/features/learning-log";
 import { GoalsCard } from "./GoalsCard";
 
 expect.extend(toHaveNoViolations);
@@ -28,6 +29,51 @@ const entries = [
   entry("c", "2026-10-01", "design-system", 60),
   entry("d", "2026-09-01", "auth", 10),
 ];
+
+const logRecord = (id: string, learningDate: string, minutes: number) => ({
+  id,
+  title: id,
+  skillId: "programming",
+  durationMinutes: minutes,
+  learningDate,
+  goal: "",
+  notes: "",
+  tags: [],
+  referenceUrls: [],
+  status: "completed",
+  createdAt: `${learningDate}T08:00:00.000Z`,
+  updatedAt: `${learningDate}T08:00:00.000Z`,
+});
+
+beforeEach(() => window.localStorage.clear());
+
+describe("GoalsCard learning logs", () => {
+  it("adds nothing when the visitor has no logs", () => {
+    setup();
+    expect(screen.queryByText(/Nhật ký học tập của bạn/)).toBeNull();
+  });
+
+  it("counts the visitor's own logs for the selected period", async () => {
+    const today = toLocalDateKey();
+    const longAgo = toLocalDateKey(new Date(Date.now() - 20 * 86_400_000));
+    window.localStorage.setItem(
+      "pp.learning-logs",
+      JSON.stringify([
+        logRecord("today", today, 30),
+        logRecord("earlier", longAgo, 45),
+      ]),
+    );
+    setup();
+
+    // Week: only today's log. Month: both.
+    const week = screen.getByRole("tabpanel");
+    expect(week).toHaveTextContent("1 log · 30 phút trong 7 ngày qua");
+    await userEvent.click(screen.getByRole("tab", { name: "Tháng" }));
+    expect(screen.getByRole("tabpanel")).toHaveTextContent(
+      "2 log · 75 phút trong 30 ngày qua",
+    );
+  });
+});
 
 function setup() {
   return render(

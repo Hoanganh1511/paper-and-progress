@@ -14,6 +14,11 @@ import {
 } from "@/design-system";
 import { Mascot } from "@/features/english/components/Mascot";
 import { formatDevlogDate } from "@/features/devlog/status";
+import {
+  toLocalDateKey,
+  totalsForPeriod,
+  useLearningLogs,
+} from "@/features/learning-log";
 import type { PeriodProgress } from "@/features/devlog/types";
 
 export interface GoalsCardProps extends Omit<
@@ -35,6 +40,10 @@ function encouragement(period: PeriodProgress) {
 }
 
 function PeriodView({ period }: { period: PeriodProgress }) {
+  const logs = useLearningLogs();
+  // The visitor's own logs, counted over the same number of days ending today.
+  const learning = totalsForPeriod(logs, period.days, toLocalDateKey());
+
   return (
     <div className="flex flex-col gap-4">
       {period.endsAt && (
@@ -66,6 +75,13 @@ function PeriodView({ period }: { period: PeriodProgress }) {
           </li>
         ))}
       </ul>
+      {learning.logs > 0 && (
+        <Text as="p" size="body-sm" color="secondary">
+          Nhật ký học tập của bạn: {learning.logs} log
+          {learning.minutes > 0 && ` · ${learning.minutes} phút`} trong{" "}
+          {period.days} ngày qua.
+        </Text>
+      )}
       <div className="flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-yellow/30 p-3">
         <Mascot
           accessory="trophy"
