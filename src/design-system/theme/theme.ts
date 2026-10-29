@@ -1,5 +1,8 @@
 export type Theme = "light" | "dark";
 
+/** What the user chose; "system" means they follow the operating system. */
+export type ThemePreference = Theme | "system";
+
 export const THEME_STORAGE_KEY = "theme";
 export const THEME_CHANGE_EVENT = "theme-change";
 
@@ -20,6 +23,11 @@ export function getSystemTheme(): Theme {
     : "light";
 }
 
+/** The saved choice, or "system" when the user never picked one. */
+export function readThemePreference(): ThemePreference {
+  return readStoredTheme() ?? "system";
+}
+
 /** The theme in effect: the user's choice, else the system's. */
 export function resolveTheme(): Theme {
   return readStoredTheme() ?? getSystemTheme();
@@ -34,6 +42,17 @@ export function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
   root.dataset.theme = theme;
+}
+
+/**
+ * Like `applyTheme`, but "system" clears both hooks on <html> so the
+ * prefers-color-scheme rule in globals.css decides (and keeps following it).
+ */
+export function applyThemePreference(preference: ThemePreference) {
+  if (preference !== "system") return applyTheme(preference);
+  const root = document.documentElement;
+  root.classList.remove("dark");
+  delete root.dataset.theme;
 }
 
 /** Runs before first paint (see ThemeScript) so a saved choice does not flash the other theme. */

@@ -5,9 +5,12 @@ import {
   THEME_CHANGE_EVENT,
   THEME_STORAGE_KEY,
   applyTheme,
+  applyThemePreference,
   readStoredTheme,
+  readThemePreference,
   resolveTheme,
   type Theme,
+  type ThemePreference,
 } from "./theme";
 
 function subscribe(onChange: () => void) {
@@ -38,6 +41,12 @@ export function useTheme() {
     () => "light",
   );
 
+  const preference = useSyncExternalStore<ThemePreference>(
+    subscribe,
+    readThemePreference,
+    () => "system",
+  );
+
   // Re-apply a saved choice in case ThemeScript did not run (it is optional).
   useEffect(() => {
     const stored = readStoredTheme();
@@ -54,10 +63,22 @@ export function useTheme() {
     window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   }, []);
 
+  /** Like `setTheme`, plus "system": forget the saved choice and follow the OS. */
+  const setPreference = useCallback((next: ThemePreference) => {
+    try {
+      if (next === "system") window.localStorage.removeItem(THEME_STORAGE_KEY);
+      else window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Storage can be blocked; the choice then lasts for this page only.
+    }
+    applyThemePreference(next);
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+  }, []);
+
   const toggleTheme = useCallback(
     () => setTheme(resolveTheme() === "dark" ? "light" : "dark"),
     [setTheme],
   );
 
-  return { theme, setTheme, toggleTheme };
+  return { theme, preference, setTheme, setPreference, toggleTheme };
 }

@@ -164,6 +164,29 @@ describe("useTheme", () => {
     expect(result.current.theme).toBe("dark");
   });
 
+  it("reports the saved preference, or system when none is saved", () => {
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.preference).toBe("system");
+    act(() => result.current.setPreference("dark"));
+    expect(result.current.preference).toBe("dark");
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
+    expect(document.documentElement).toHaveClass("dark");
+  });
+
+  it("system forgets the saved choice and hands control back to the OS", () => {
+    mockSystemTheme("dark");
+    const { result } = renderHook(() => useTheme());
+    act(() => result.current.setPreference("light"));
+    expect(document.documentElement.dataset.theme).toBe("light");
+
+    act(() => result.current.setPreference("system"));
+    expect(result.current.preference).toBe("system");
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(document.documentElement).not.toHaveClass("dark");
+    expect(result.current.theme).toBe("dark");
+  });
+
   it("keeps several users of the hook in step", () => {
     const first = renderHook(() => useTheme());
     const second = renderHook(() => useTheme());
