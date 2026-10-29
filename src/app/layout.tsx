@@ -20,7 +20,6 @@ const geistMono = Geist_Mono({
 // (score, unread count); the user itself comes from the Keycloak session and the footer links point at the real pages.
 const FACEBOOK_COMMUNITY_URL = "https://www.facebook.com/";
 const ZALO_SUPPORT_URL = "https://zalo.me/";
-const FANPAGE_URL = "https://www.facebook.com/";
 const SAMPLE_SCORE = 227;
 const SAMPLE_PROFILE_BADGE = 1;
 
@@ -58,7 +57,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <AppFooter
               zaloHref={ZALO_SUPPORT_URL}
               communityHref={FACEBOOK_COMMUNITY_URL}
-              fanpageHref={FANPAGE_URL}
             />
           </HideOnRoutes>
         </AuthProvider>

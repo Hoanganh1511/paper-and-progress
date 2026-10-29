@@ -8,7 +8,6 @@ expect.extend(toHaveNoViolations);
 const LINKS = {
   zaloHref: "https://zalo.me/g/support",
   communityHref: "https://www.facebook.com/groups/learning",
-  fanpageHref: "https://www.facebook.com/duaedu",
 };
 
 function setup(props: Partial<AppFooterProps> = {}) {
@@ -22,10 +21,11 @@ describe("AppFooter", () => {
   });
 
   describe("left column", () => {
-    it("names the product and its maker", () => {
+    it("names the product", () => {
       setup();
       const footer = screen.getByRole("contentinfo");
-      expect(footer).toHaveTextContent("DataLab · Một sản phẩm của DUA Edu");
+      expect(footer).toHaveTextContent("Paper & Progress");
+      expect(footer).not.toHaveTextContent("DUA Edu");
     });
 
     it("can name another product", () => {
@@ -88,61 +88,19 @@ describe("AppFooter", () => {
     });
   });
 
-  describe("right column", () => {
-    it("has a fanpage link, a short description and a filled follow button-link", () => {
-      setup();
-      expect(
-        screen.getByRole("link", { name: /^Fanpage DUA Edu/ }),
-      ).toHaveAttribute("href", LINKS.fanpageHref);
-      expect(
-        screen.getByText(/Cập nhật tài liệu, sự kiện/),
-      ).toBeInTheDocument();
-
-      const follow = screen.getByRole("link", { name: /Theo dõi DUA Edu/ });
-      expect(follow).toHaveAttribute("href", LINKS.fanpageHref);
-      expect(follow).toHaveAttribute("target", "_blank");
-      expect(follow).toHaveAttribute("rel", "noopener noreferrer");
-      expect(follow).toHaveClass("bg-accent-lime");
-      expect(follow).toHaveAccessibleName(/\(mở trong tab mới\)$/);
-    });
-
-    it("shows the description in muted text that still reads clearly", () => {
-      setup();
-      // Secondary rather than muted: muted is under 4.5:1 on this background.
-      expect(screen.getByText(/Cập nhật tài liệu/)).toHaveClass(
-        "text-text-secondary",
-      );
-    });
-
-    it("is left out without a fanpage address", () => {
-      setup({ fanpageHref: undefined });
-      expect(
-        screen.queryByRole("link", { name: /Fanpage/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("link", { name: /Theo dõi/ }),
-      ).not.toBeInTheDocument();
-    });
-  });
-
   describe("layout", () => {
-    it("is three columns from md and stacked below", () => {
+    it("is two columns from md and stacked below", () => {
       const { container } = setup();
       const grid = container.querySelector(".grid") as HTMLElement;
-      expect(grid).toHaveClass("md:grid-cols-3");
-      expect(grid.children).toHaveLength(3);
+      expect(grid).toHaveClass("md:grid-cols-2");
+      expect(grid.children).toHaveLength(2);
     });
   });
 
   it("is operable with the keyboard, in reading order", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     setup();
-    const order = [
-      /^Nhóm Zalo/,
-      /^Cộng đồng Facebook/,
-      /^Fanpage DUA Edu/,
-      /^Theo dõi DUA Edu/,
-    ];
+    const order = [/^Nhóm Zalo/, /^Cộng đồng Facebook/];
     for (const name of order) {
       await userEvent.tab();
       expect(document.activeElement).toHaveAccessibleName(name);
@@ -154,7 +112,6 @@ describe("AppFooter", () => {
       labels: {
         linksHeading: "Learning & support",
         zalo: "Zalo support group",
-        follow: "Follow DUA Edu",
         opensInNewTab: "(opens in a new tab)",
       },
     });
@@ -165,9 +122,6 @@ describe("AppFooter", () => {
       screen.getByRole("link", {
         name: /Zalo support group\s*\(opens in a new tab\)/,
       }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Follow DUA Edu/ }),
     ).toBeInTheDocument();
   });
 
