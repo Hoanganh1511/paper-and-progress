@@ -16,16 +16,40 @@ import type {
   TabSection,
 } from "./types";
 
+/** Where every "edit" action on the profile page leads. */
+export const SETTINGS_HREF = "/settings";
+
+const ALL_TABS: Record<ProfileTabId, ProfileTab> = {
+  overview: { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
+  personal: { id: "personal", label: "Chỉnh sửa", icon: User },
+  security: { id: "security", label: "Bảo mật", icon: ShieldCheck },
+  preferences: {
+    id: "preferences",
+    label: "Tùy chọn",
+    icon: SlidersHorizontal,
+  },
+  connected: { id: "connected", label: "Tài khoản liên kết", icon: Link2 },
+  billing: { id: "billing", label: "Gói & Thanh toán", icon: CreditCard },
+  professional: { id: "professional", label: "Chuyên môn", icon: Briefcase },
+  activity: { id: "activity", label: "Hoạt động", icon: Activity },
+  content: { id: "content", label: "Nội dung & Dữ liệu", icon: FolderOpen },
+};
+
+/** `/profile`: what other people (and you) see about the member. */
 export const PROFILE_TABS: ProfileTab[] = [
-  { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "personal", label: "Thông tin cá nhân", icon: User },
-  { id: "security", label: "Bảo mật", icon: ShieldCheck },
-  { id: "preferences", label: "Tùy chọn", icon: SlidersHorizontal },
-  { id: "connected", label: "Tài khoản liên kết", icon: Link2 },
-  { id: "billing", label: "Gói & Thanh toán", icon: CreditCard },
-  { id: "professional", label: "Chuyên môn", icon: Briefcase },
-  { id: "activity", label: "Hoạt động", icon: Activity },
-  { id: "content", label: "Nội dung & Dữ liệu", icon: FolderOpen },
+  ALL_TABS.overview,
+  ALL_TABS.professional,
+  ALL_TABS.activity,
+  ALL_TABS.content,
+];
+
+/** `/settings`: everything the member can change about the account. */
+export const SETTINGS_TABS: ProfileTab[] = [
+  ALL_TABS.personal,
+  ALL_TABS.security,
+  ALL_TABS.preferences,
+  ALL_TABS.connected,
+  ALL_TABS.billing,
 ];
 
 /** Placeholder content until the profile API exists. */
@@ -93,7 +117,47 @@ export const PROFILE_OVERVIEW: ProfileOverview = {
     { label: "Kỹ năng", value: "14" },
     { label: "Điểm XP", value: "2.340" },
   ],
+  weekMetrics: [
+    { label: "Buổi học", value: "3/5" },
+    { label: "Giờ học", value: "4,5" },
+    { label: "Từ vựng mới", value: "24" },
+    { label: "Bài hoàn thành", value: "5" },
+  ],
   weeklyGoal: { percent: 60, label: "3/5 buổi học tuần này" },
+  recentActivity: [
+    {
+      id: "r1",
+      kind: "lesson",
+      action: "Hoàn thành bài học",
+      title: "Backend: JWT & Refresh Token",
+      time: "Hôm nay, 09:30",
+      href: "/goals/tech/backend-tutor",
+    },
+    {
+      id: "r2",
+      kind: "diary",
+      action: "Viết nhật ký tiếng Anh",
+      title: "Introduce a Project",
+      time: "Hôm qua, 21:15",
+      href: "/goals/english/diary",
+    },
+    {
+      id: "r3",
+      kind: "bookmark",
+      action: "Lưu bookmark",
+      title: "What is new in React 19",
+      time: "2 ngày trước",
+      href: "/bookmarks",
+    },
+    {
+      id: "r4",
+      kind: "devlog",
+      action: "Cập nhật devlog",
+      title: "Auth System — Phase 1",
+      time: "3 ngày trước",
+      href: "/devlog",
+    },
+  ],
   goals: [
     { id: "g1", label: "Hoàn thành 2 bài Backend", isDone: true },
     { id: "g2", label: "Luyện nghe 30 phút", isDone: true },

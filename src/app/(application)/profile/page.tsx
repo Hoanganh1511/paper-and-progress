@@ -3,8 +3,7 @@ import { ProfileScreen } from "@/features/profile";
 
 export const metadata: Metadata = {
   title: "Hồ sơ cá nhân - Paper & Progress",
-  description:
-    "Quản lý thông tin cá nhân, bảo mật, tùy chọn, gói thanh toán và theo dõi tiến độ học của bạn.",
+  description: "Xem thông tin cá nhân, thành tích và tiến độ học của bạn.",
 };
 
 export default function ProfilePage() {

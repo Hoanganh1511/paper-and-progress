@@ -50,6 +50,8 @@ src/app/
 │   ├── bookmarks/                    # /bookmarks
 │   ├── devlog/                       # /devlog (+ feed.xml/route.ts: RSS)
 │   ├── learn/                        # /learn
+│   ├── profile/                      # /profile (xem hồ sơ: Tổng quan, Chuyên môn, Hoạt động, Nội dung)
+│   ├── settings/                     # /settings (chỉnh sửa: hồ sơ, bảo mật, tùy chọn, liên kết, thanh toán)
 │   └── goals/
 │       ├── english/                  # /goals/english
 │       └── tech/                     # /goals/tech

@@ -49,6 +49,7 @@
   --color-surface-card: #ffffff;
   --color-surface-overlay: #ffffff;
   --color-surface-sunken: #e5e2da;
+  --color-surface-muted: #f7f5f0;
   --color-surface-header: #ffffff;
 
   /* Semantic text */
@@ -196,6 +197,7 @@
   --color-surface-card: #262626;
   --color-surface-overlay: #303030;
   --color-surface-sunken: #141414;
+  --color-surface-muted: #1f1f1f;
   --color-surface-header: #262626;
 
   --color-text-primary: #f5f5f5;
@@ -244,6 +246,7 @@
     --color-surface-card: #262626;
     --color-surface-overlay: #303030;
     --color-surface-sunken: #141414;
+    --color-surface-muted: #1f1f1f;
     --color-surface-header: #262626;
     --color-text-primary: #f5f5f5;
     --color-text-secondary: #d4d4d4;

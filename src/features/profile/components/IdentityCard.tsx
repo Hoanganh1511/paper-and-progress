@@ -1,6 +1,5 @@
 import {
   BadgeCheck,
-  Camera,
   Check,
   ExternalLink,
   Mail,
@@ -9,18 +8,32 @@ import {
   Phone,
   Quote,
 } from "lucide-react";
-import { Badge, Button, Inline, Stack, Text } from "@/design-system";
+import { Badge, Button, LinkButton, Stack, Text } from "@/design-system";
 import { PROFILE_OVERVIEW } from "../data";
 import { ProfileCard } from "./ProfileCard";
 
 export interface IdentityCardProps {
   name: string;
   email: string;
+  /** Uploaded picture; the initial of `name` is shown without one. */
+  avatarUrl?: string | null;
+  /** Where the "Chỉnh sửa hồ sơ" link leads (the settings page). */
+  editHref: string;
 }
 
+// Projects, learning logs, posts, courses and XP; the week's numbers live in the progress card.
 const IDENTITY_STATS = ["Dự án", "Nhật ký", "Bài viết", "Khóa học", "Điểm XP"];
 
-export function IdentityCard({ name, email }: IdentityCardProps) {
+/**
+ * The profile hero: who the member is (identity, contact, bio, topics, stats)
+ * on the left 60%, a quiet quote panel on the right 40%. Stacks below 768px.
+ */
+export function IdentityCard({
+  name,
+  email,
+  avatarUrl,
+  editHref,
+}: IdentityCardProps) {
   const profile = PROFILE_OVERVIEW;
   const initial = name.trim().charAt(0).toUpperCase() || "?";
   const stats = profile.stats.filter((stat) =>
@@ -28,40 +41,33 @@ export function IdentityCard({ name, email }: IdentityCardProps) {
   );
 
   return (
-    <ProfileCard aria-label="Hồ sơ">
-      <div className="grid gap-6 md:grid-cols-[13fr_7fr]">
-        <Stack gap={5}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="relative size-24 shrink-0">
-              <div
-                aria-hidden="true"
-                className="flex size-full items-center justify-center rounded-pill border-2 border-border-strong bg-accent-pink font-display text-heading-xl text-ink"
-              >
-                {initial}
-              </div>
-              <Button
-                variant="secondary"
-                size="compact"
-                aria-label="Tải ảnh đại diện lên"
-                className="absolute -right-1 -bottom-1 size-9 rounded-pill px-0"
-              >
-                <Camera aria-hidden="true" size={16} />
-              </Button>
+    <ProfileCard aria-label="Hồ sơ" className="shadow-floating">
+      <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
+        <Stack gap={4} className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div
+              aria-hidden="true"
+              className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-pill border-2 border-border-strong bg-accent-pink font-display text-heading-md text-ink sm:size-20 sm:text-heading-lg"
+            >
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- external S3 URL
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                initial
+              )}
             </div>
-            <Stack gap={2} className="min-w-0">
-              <Inline gap={1} align="center">
-                <Text as="h2" size="heading-xl" weight="bold">
-                  {name}
-                </Text>
-                <Button
-                  variant="ghost"
-                  size="compact"
-                  aria-label="Sửa tên hiển thị"
-                  className="px-2"
-                >
-                  <Pencil aria-hidden="true" size={16} />
-                </Button>
-              </Inline>
+            <Stack gap={2} className="min-w-0 flex-1">
+              <Text
+                as="h2"
+                weight="bold"
+                className="text-heading-md break-words md:text-heading-lg"
+              >
+                {name}
+              </Text>
               <Badge variant="blue" icon={Check} className="w-fit">
                 Thành viên từ {profile.memberSince}
               </Badge>
@@ -70,13 +76,13 @@ export function IdentityCard({ name, email }: IdentityCardProps) {
               variant="outline"
               size="compact"
               leftIcon={ExternalLink}
-              className="shrink-0 sm:ml-auto"
+              className="shrink-0"
             >
               Xem hồ sơ công khai
             </Button>
           </div>
 
-          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
             <li className="flex min-w-0 items-center gap-2">
               <Mail aria-hidden="true" size={16} className="shrink-0" />
               <Text size="body-md" className="min-w-0 break-all">
@@ -99,10 +105,10 @@ export function IdentityCard({ name, email }: IdentityCardProps) {
           </ul>
 
           <Stack gap={2}>
-            <Text size="body-md" weight="semibold">
+            <Text size="body-lg" weight="semibold">
               {profile.headline}
             </Text>
-            <Text size="body-sm" color="secondary">
+            <Text size="body-md" color="secondary">
               {profile.bio}
             </Text>
             <ul aria-label="Chủ đề quan tâm" className="flex flex-wrap gap-2">
@@ -117,11 +123,11 @@ export function IdentityCard({ name, email }: IdentityCardProps) {
           </Stack>
 
           <div className="flex flex-col gap-4 border-t border-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <dl className="flex flex-wrap divide-x divide-border-subtle">
+            <dl className="grid grid-cols-3 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-0 sm:divide-x sm:divide-border-subtle">
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex flex-col px-4 first:pl-0 last:pr-0"
+                  className="flex flex-col sm:px-4 sm:first:pl-0 sm:last:pr-0"
                 >
                   <dd className="font-display text-heading-sm font-bold">
                     {stat.value}
@@ -130,9 +136,14 @@ export function IdentityCard({ name, email }: IdentityCardProps) {
                 </div>
               ))}
             </dl>
-            <Button variant="accent" leftIcon={Pencil} className="shrink-0">
+            <LinkButton
+              href={editHref}
+              variant="accent"
+              leftIcon={Pencil}
+              className="shrink-0"
+            >
               Chỉnh sửa hồ sơ
-            </Button>
+            </LinkButton>
           </div>
         </Stack>
         <QuoteBox />
@@ -147,18 +158,22 @@ const QUOTE_LINE_COLORS = [
   "text-danger-text",
 ] as const;
 
+/**
+ * A pale panel, secondary to the identity beside it. The panda sits in a
+ * reserved strip at the bottom, so it never overlaps the (at most 3) lines.
+ */
 function QuoteBox() {
   const { lines } = PROFILE_OVERVIEW.quote;
 
   return (
-    <figure className="relative flex min-h-48 flex-col justify-center overflow-hidden rounded-standard bg-accent-yellow/40 px-8 pt-10 pb-16">
+    <figure className="relative flex min-h-40 flex-col justify-center overflow-hidden rounded-standard border border-border-subtle bg-accent-yellow/40 px-6 pt-10 pb-20 md:min-h-full">
       <Quote
         aria-hidden="true"
-        size={32}
+        size={28}
         className="absolute top-3 left-3 text-ink"
       />
       <blockquote className="text-center font-handwritten text-heading-md font-semibold">
-        {lines.map((line, index) => (
+        {lines.slice(0, 3).map((line, index) => (
           <p
             key={line}
             className={QUOTE_LINE_COLORS[index % QUOTE_LINE_COLORS.length]}
@@ -167,14 +182,9 @@ function QuoteBox() {
           </p>
         ))}
       </blockquote>
-      <Quote
-        aria-hidden="true"
-        size={32}
-        className="absolute right-3 bottom-3 rotate-180 text-ink"
-      />
       <span
         aria-hidden="true"
-        className="absolute right-6 -bottom-2 text-[4rem] leading-none"
+        className="absolute right-4 bottom-2 text-[3.5rem] leading-none"
       >
         🐼
       </span>
