@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MfaChallenge } from "../components/MfaChallenge";
 import { AuthApiError } from "../authApi";
 import { useAuth } from "../hooks";
-import { AUTH_ERROR_MESSAGES } from "../messages";
+import { AUTH_ERROR_MESSAGES, describeAuthError } from "../messages";
 
 /** `/mfa-challenge?ticket=…`: the second sign-in step when 2FA is on. */
 export function MfaChallengeScreen() {
@@ -25,7 +25,7 @@ export function MfaChallengeScreen() {
     } catch (caught) {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";
       if (code === "account_suspended") router.push("/account-suspended");
-      else setError(AUTH_ERROR_MESSAGES[code]);
+      else setError(describeAuthError(caught));
       setIsSubmitting(false);
     }
   }

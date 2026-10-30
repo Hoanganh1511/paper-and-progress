@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { SkipLink, ThemeScript } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
@@ -29,6 +30,7 @@ const DevTodoWidget =
 
 // Placeholder values until the header is fed by the signed-in user's data
 // (score, unread count); the user itself comes from the signed-in session and the footer links point at the real pages.
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 const FACEBOOK_COMMUNITY_URL = "https://www.facebook.com/";
 const ZALO_SUPPORT_URL = "https://zalo.me/";
 const SAMPLE_SCORE = 227;
@@ -51,6 +53,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeScript />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* reCAPTCHA v3 is invisible; without a site key (dev) it is not loaded. */}
+        {RECAPTCHA_SITE_KEY && (
+          <Script
+            src={`https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`}
+            strategy="afterInteractive"
+          />
+        )}
         {/* First in the page, so keyboard users can jump past the header. */}
         <SkipLink lang="vi">Bỏ qua đến nội dung chính</SkipLink>
         <AuthProvider>

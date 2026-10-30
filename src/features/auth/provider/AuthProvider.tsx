@@ -24,6 +24,7 @@ import {
   type AuthTokens,
   type User,
 } from "../authApi";
+import { getRecaptchaToken } from "../recaptcha";
 import {
   AuthContext,
   type AuthContextValue,
@@ -108,7 +109,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback<AuthContextValue["login"]>(
     async ({ email, password, rememberMe }) => {
-      const result = await loginApi(email, password, rememberMe);
+      const recaptchaToken = await getRecaptchaToken("login");
+      const result = await loginApi(
+        email,
+        password,
+        rememberMe,
+        recaptchaToken,
+      );
       if (result.status === "mfa_required") return result;
       await startSession(result.tokens);
       return { status: "authenticated" };
@@ -118,7 +125,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = useCallback<AuthContextValue["register"]>(
     async ({ name, email, password }) => {
-      await registerApi(name, email, password);
+      const recaptchaToken = await getRecaptchaToken("register");
+      await registerApi(name, email, password, recaptchaToken);
     },
     [],
   );

@@ -407,19 +407,31 @@ export const loginApi = async (
   email: string,
   password: string,
   rememberMe = false,
+  recaptchaToken = "",
 ): Promise<LoginResult> =>
   toLoginResult(
     await call(
-      api.post<LoginResponse>("/auth/login", { email, password, rememberMe }),
+      api.post<LoginResponse>("/auth/login", {
+        email,
+        password,
+        rememberMe,
+        ...(recaptchaToken && { recaptchaToken }),
+      }),
     ),
   );
 
-export const registerApi = (name: string, email: string, password: string) =>
+export const registerApi = (
+  name: string,
+  email: string,
+  password: string,
+  recaptchaToken = "",
+) =>
   call(
     api.post<unknown>("/auth/register", {
       displayName: name,
       email,
       password,
+      ...(recaptchaToken && { recaptchaToken }),
     }),
   );
 
