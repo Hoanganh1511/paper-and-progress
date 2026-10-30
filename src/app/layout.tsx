@@ -5,6 +5,7 @@ import Script from "next/script";
 import { SkipLink, ThemeScript } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
+import { DailyGateLauncher } from "@/features/daily-gate";
 import { HideOnRoutes } from "./HideOnRoutes";
 import "./globals.css";
 
@@ -34,7 +35,6 @@ const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 const FACEBOOK_COMMUNITY_URL = "https://www.facebook.com/";
 const ZALO_SUPPORT_URL = "https://zalo.me/";
 const SAMPLE_SCORE = 227;
-const SAMPLE_PROFILE_BADGE = 1;
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -67,7 +67,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             isSticky
             facebookHref={FACEBOOK_COMMUNITY_URL}
             score={SAMPLE_SCORE}
-            profileBadge={SAMPLE_PROFILE_BADGE}
           />
           {/* Grows to fill short pages, so the footer stays at the bottom. A
               column, so a page can in turn grow to fill it (e.g. to centre). */}
@@ -79,6 +78,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               communityHref={FACEBOOK_COMMUNITY_URL}
             />
           </HideOnRoutes>
+          {/* Opens the Daily English Gate; stacks above the dev todo button in development. */}
+          <DailyGateLauncher hasDevTodo={DevTodoWidget !== null} />
         </AuthProvider>
         {DevTodoWidget && <DevTodoWidget />}
       </body>

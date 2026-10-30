@@ -2,6 +2,8 @@
 
 import { useId, useState, type FormEvent } from "react";
 import {
+  DatePicker,
+  datePickerLabelsVi,
   Button,
   Dialog,
   DialogContent,
@@ -145,10 +147,11 @@ export function DiaryLogDialog({
               </Select>
             </FormField>
             <FormField label="Ngày học" required error={errors.date}>
-              <Input
-                type="date"
+              <DatePicker
                 value={date}
-                onChange={(event) => setDate(event.target.value)}
+                onValueChange={setDate}
+                isClearable={false}
+                labels={datePickerLabelsVi}
               />
             </FormField>
             <FormField label="Thời lượng (phút)" error={errors.duration}>

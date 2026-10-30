@@ -39,11 +39,7 @@ export interface AuthContextValue {
     password: string;
   }) => Promise<void>;
   /** Completes a sign-in that asked for 2FA. */
-  verifyMfa: (values: {
-    mfaToken: string;
-    code: string;
-    isBackupCode: boolean;
-  }) => Promise<void>;
+  verifyMfa: (values: { mfaToken: string; code: string }) => Promise<void>;
   /**
    * Signs in with tokens the backend already issued, e.g. after Google, Facebook
    * or GitHub sent the visitor back to `/auth/callback`. Throws `AuthApiError`

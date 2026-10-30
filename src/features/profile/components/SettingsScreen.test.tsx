@@ -41,18 +41,18 @@ describe("SettingsScreen", () => {
       screen.getByRole("heading", { level: 1, name: "Cài đặt tài khoản" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
-      "Chỉnh sửa",
-      "Bảo mật",
+      "Tài khoản",
+      "Bảo mật & Quyền",
       "Tùy chọn",
       "Tài khoản liên kết",
       "Gói & Thanh toán",
     ]);
-    expect(screen.getByRole("tab", { name: "Chỉnh sửa" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Tài khoản" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     expect(
-      await screen.findByRole("heading", { level: 2, name: "Chỉnh sửa hồ sơ" }),
+      await screen.findByRole("heading", { level: 2, name: "Tài khoản" }),
     ).toBeVisible();
   });
 
@@ -75,15 +75,15 @@ describe("SettingsScreen", () => {
       within(panel).getByRole("button", { name: "Thử lại" }),
     );
     expect(
-      await screen.findByRole("heading", { level: 2, name: "Chỉnh sửa hồ sơ" }),
+      await screen.findByRole("heading", { level: 2, name: "Tài khoản" }),
     ).toBeInTheDocument();
   });
 
   it("switches to the security tab", async () => {
     render(<SettingsScreen />);
-    await userEvent.click(screen.getByRole("tab", { name: "Bảo mật" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Bảo mật & Quyền" }));
     expect(
-      screen.getByRole("heading", { level: 2, name: "Bảo mật" }),
+      screen.getByRole("heading", { level: 2, name: "Bảo mật & Quyền" }),
     ).toBeVisible();
   });
 

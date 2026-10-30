@@ -62,6 +62,8 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  /** `USER`, `CREATOR` or `ADMIN`; the admin area is only open to `ADMIN`. */
+  role?: string;
 }
 
 export interface AuthTokens {
@@ -198,15 +200,18 @@ interface ErrorBody {
   retryAfter?: number;
 }
 
+const isTotpUrl = (url: string) =>
+  url.includes("/login/totp") || url.includes("/totp/");
+
 function codeFromStatus(status: number, url = ""): AuthErrorCode {
   if (status === 429) return "rate_limited";
   if (status === 409) return "email_taken";
   if (status === 401) {
     if (url.endsWith("/login")) return "invalid_credentials";
-    return url.includes("/mfa/") ? "invalid_code" : "invalid_token";
+    return isTotpUrl(url) ? "invalid_code" : "invalid_token";
   }
   if (status === 400) {
-    if (url.includes("/mfa/")) return "invalid_code";
+    if (isTotpUrl(url)) return "invalid_code";
     if (url.endsWith("/verify-email") || url.endsWith("/reset-password"))
       return "invalid_token";
   }
@@ -454,19 +459,20 @@ interface MeResponse {
   id: string;
   email: string;
   displayName: string | null;
+  role?: string;
 }
 
 export const getMeApi = async (): Promise<User> => {
   const me = await call(api.get<MeResponse>("/auth/me"));
-  return { id: me.id, email: me.email, name: me.displayName };
+  return { id: me.id, email: me.email, name: me.displayName, role: me.role };
 };
 
+/** `code` is the 6-digit TOTP code, or a recovery code (xxxx-xxxx). */
 export const verifyMfaApi = async (values: {
   mfaToken: string;
   code: string;
-  isBackupCode: boolean;
 }): Promise<AuthTokens> =>
-  call(api.post<AuthTokens>("/auth/mfa/verify", values));
+  call(api.post<AuthTokens>("/auth/login/totp", values));
 
 /** Endpoints that need no session; screens call them directly. */
 export const authApi = {

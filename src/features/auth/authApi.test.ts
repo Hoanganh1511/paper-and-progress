@@ -123,7 +123,7 @@ describe("authApi", () => {
 
     const results = await Promise.all([getMeApi(), getMeApi(), getMeApi()]);
 
-    const user = { id: "1", email: "a@b.co", name: "A" };
+    const user = { id: "1", email: "a@b.co", name: "A", role: "USER" };
     expect(results).toEqual([user, user, user]);
     expect(refreshCalls).toBe(1);
     expect(getAccessToken()).toBe("fresh");
@@ -214,6 +214,7 @@ describe("account endpoints", () => {
       id: "1",
       email: "a@b.co",
       name: "A",
+      role: "USER",
     });
   });
 });

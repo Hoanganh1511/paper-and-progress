@@ -15,8 +15,11 @@ import {
   type UserProfile,
 } from "../profileApi";
 import { AvatarUpload } from "./AvatarUpload";
+import { ChangePasswordForm } from "./ChangePasswordForm";
+import { DeactivateOrDeleteSection } from "./DeactivateOrDeleteSection";
 import { FormStatus, type FormStatusValue } from "./FormStatus";
 import { ProfileCard } from "./ProfileCard";
+import { SecurityAccordion } from "./SecurityAccordion";
 
 const MAX_NAME = 100;
 const MAX_BIO = 500;
@@ -32,7 +35,7 @@ export interface EditProfileTabProps {
   onRemoveAvatar: () => Promise<void>;
 }
 
-/** "Chỉnh sửa": the profile picture and the display name, bio and phone form. */
+/** "Tài khoản": the profile picture and form, the password, and leaving the account. */
 export function EditProfileTab({
   profile,
   fallbackName,
@@ -92,13 +95,13 @@ export function EditProfileTab({
     <Stack gap={4}>
       <Stack gap={1}>
         <Text as="h2" size="heading-md" weight="semibold">
-          Chỉnh sửa hồ sơ
+          Tài khoản
         </Text>
         <Text size="body-md" color="secondary">
-          Cập nhật ảnh đại diện và thông tin hiển thị của bạn.
+          Cập nhật hồ sơ, mật khẩu và quản lý tài khoản của bạn.
         </Text>
       </Stack>
-      <div className="max-w-2xl">
+      <div className="grid items-start gap-6 md:grid-cols-2">
         <ProfileCard title="Thông tin cá nhân">
           <AvatarUpload
             avatarUrl={profile.avatarUrl}
@@ -148,6 +151,14 @@ export function EditProfileTab({
               </Button>
             </div>
           </form>
+        </ProfileCard>
+        <ProfileCard aria-label="Mật khẩu và quản lý tài khoản">
+          <SecurityAccordion title="Đổi mật khẩu" isOpenByDefault>
+            <ChangePasswordForm />
+          </SecurityAccordion>
+          <SecurityAccordion title="Hủy kích hoạt hoặc xóa tài khoản">
+            <DeactivateOrDeleteSection />
+          </SecurityAccordion>
         </ProfileCard>
       </div>
     </Stack>

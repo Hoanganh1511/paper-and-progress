@@ -30,76 +30,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("AppHeader", () => {
-  async function openExplore() {
-    await userEvent.click(screen.getByRole("button", { name: "Khám phá" }));
-    // The panel appears once the press animation has finished.
-    await screen.findByRole("navigation", { name: "Điều hướng chính" });
-  }
-
   afterEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove("dark");
     document.documentElement.removeAttribute("data-theme");
-  });
-
-  describe("navigation", () => {
-    afterEach(() => {
-      pathname.current = "/";
-    });
-
-    it("lists the page links in a named navigation", async () => {
-      setup();
-      await openExplore();
-      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
-      expect(
-        within(nav).getByRole("link", { name: /^Học tập/ }),
-      ).toHaveAttribute("href", "/learn");
-      expect(
-        within(nav).getByRole("link", { name: "Công nghệ thông tin" }),
-      ).toHaveAttribute("href", "/goals/tech");
-    });
-
-    it("marks the current page, including deeper paths of a section", async () => {
-      pathname.current = "/learn";
-      const { unmount } = setup();
-      await openExplore();
-      expect(
-        screen.getByRole("link", { name: "Công nghệ thông tin" }),
-      ).not.toHaveAttribute("aria-current");
-      unmount();
-
-      pathname.current = "/goals/tech/react";
-      setup();
-      await openExplore();
-      expect(
-        screen.getByRole("link", { name: "Công nghệ thông tin" }),
-      ).toHaveAttribute("aria-current", "page");
-    });
-
-    it("takes custom items; the goals and call-to-action links stay even when empty", async () => {
-      const { unmount } = setup({
-        navItems: [{ label: "Từ điển", href: "/dictionary" }],
-      });
-      await openExplore();
-      expect(screen.getByRole("link", { name: "Từ điển" })).toHaveAttribute(
-        "href",
-        "/dictionary",
-      );
-      unmount();
-
-      setup({ navItems: [] });
-      await openExplore();
-      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
-      expect(
-        within(nav).getByRole("link", { name: "Mục tiêu tiếng Anh" }),
-      ).toBeInTheDocument();
-      expect(
-        within(nav).getByRole("link", { name: /Học tập/ }),
-      ).toBeInTheDocument();
-      expect(
-        within(nav).queryByRole("link", { name: "Từ điển" }),
-      ).not.toBeInTheDocument();
-    });
   });
 
   describe("brand", () => {
@@ -121,44 +55,7 @@ describe("AppHeader", () => {
     });
   });
 
-  describe("goals button", () => {
-    afterEach(() => {
-      pathname.current = "/";
-    });
-
-    it("is a highlighted link to the English goals page, in the nav bar", async () => {
-      setup();
-      await openExplore();
-      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
-      const link = within(nav).getByRole("link", {
-        name: "Mục tiêu tiếng Anh",
-      });
-      expect(link).toHaveAttribute("href", "/goals/english");
-      expect(link).toHaveClass("bg-accent-pink");
-      expect(link.querySelector("svg")).toHaveClass("lucide-graduation-cap");
-      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
-      expect(link).not.toHaveAttribute("aria-current");
-    });
-
-    it("marks itself current on the goals page and its subpaths", async () => {
-      pathname.current = "/goals/english/ielts";
-      setup();
-      await openExplore();
-      expect(
-        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
-      ).toHaveAttribute("aria-current", "page");
-    });
-
-    it("can point elsewhere", async () => {
-      setup({ goalsHref: "/goals/en" });
-      await openExplore();
-      expect(
-        screen.getByRole("link", { name: "Mục tiêu tiếng Anh" }),
-      ).toHaveAttribute("href", "/goals/en");
-    });
-  });
-
-  describe("search and call to action", () => {
+  describe("search", () => {
     afterEach(() => {
       pathname.current = "/";
     });
@@ -192,47 +89,6 @@ describe("AppHeader", () => {
     it("can point the search elsewhere", () => {
       setup({ searchAction: "/tu-dien" });
       expect(screen.getByRole("search")).toHaveAttribute("action", "/tu-dien");
-    });
-
-    it("has a call to action that links to the learning page, in the nav bar", async () => {
-      setup();
-      await openExplore();
-      const nav = screen.getByRole("navigation", { name: "Điều hướng chính" });
-      const link = within(nav).getByRole("link", { name: /Học tập/ });
-      expect(link).toHaveAttribute("href", "/learn");
-      // The arrow and the heart are decorative and left out of the name.
-      expect(link).toHaveAccessibleName(/^Học tập\s*\(Bắt đầu học từ đây\)$/);
-      expect(link.querySelector('[lang="vi"]')).toHaveTextContent("Học tập");
-      expect(link).toHaveClass("bg-accent-lime");
-    });
-
-    it("hides the decorative arrow and heart from its accessible name", async () => {
-      setup();
-      await openExplore();
-      const link = screen.getByRole("link", { name: /Học tập/ });
-      const hidden = Array.from(
-        link.querySelectorAll('[aria-hidden="true"]'),
-      ).map((element) => element.textContent);
-      expect(hidden).toEqual(["→", "♡"]);
-    });
-
-    it("marks itself current on the learning page and its subpaths", async () => {
-      pathname.current = "/learn/english";
-      setup();
-      await openExplore();
-      expect(screen.getByRole("link", { name: /^Học tập/ })).toHaveAttribute(
-        "aria-current",
-        "page",
-      );
-    });
-
-    it("can lead elsewhere", async () => {
-      setup({ learnHref: "/start" });
-      await openExplore();
-      expect(screen.getByRole("link", { name: /Học tập/ })).toHaveAttribute(
-        "href",
-        "/start",
-      );
     });
   });
 
@@ -451,6 +307,19 @@ describe("AppHeader", () => {
       expect(push).toHaveBeenLastCalledWith("/prefs");
     });
 
+    it("adds an admin entry only when given an admin link", async () => {
+      setup({ user, adminHref: "/admin" });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(screen.getByRole("menuitem", { name: "Quản trị" }));
+      expect(push).toHaveBeenLastCalledWith("/admin");
+    });
+
+    it("has no admin entry by default", async () => {
+      setup({ user });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(screen.queryByRole("menuitem", { name: "Quản trị" })).toBeNull();
+    });
+
     it("closes on Escape and moves with the arrow keys", async () => {
       setup({ user });
       const trigger = screen.getByRole("button", { name: /Hồ sơ/ });
@@ -521,7 +390,7 @@ describe("AppHeader", () => {
         .closest(".order-2") as HTMLElement;
       expect(brand).toHaveClass("order-1");
       expect(search).toHaveClass("order-3", "w-full", "md:contents");
-      expect(status).toHaveClass("order-2", "ml-auto", "md:order-5");
+      expect(status).toHaveClass("order-2", "ml-auto", "md:order-6");
       expect(search.parentElement).toHaveClass("flex-wrap", "md:flex-nowrap");
     });
 
@@ -642,52 +511,47 @@ describe("AppHeader", () => {
     ).toBeInTheDocument();
   });
 
-  describe("explore", () => {
-    it("presses at once but shows the page links only after the press animation", async () => {
-      setup();
-      const button = screen.getByRole("button", { name: "Khám phá" });
-      expect(button).toHaveAttribute("aria-expanded", "false");
+  describe("project status", () => {
+    afterEach(() => {
+      pathname.current = "/";
+    });
 
-      await userEvent.click(button);
-      expect(button).toHaveAttribute("aria-expanded", "true");
+    it("has no Project Status button unless it is given a link", () => {
+      setup();
       expect(
-        screen.queryByRole("navigation", { name: "Điều hướng chính" }),
+        screen.queryByRole("link", { name: "Project Status" }),
       ).not.toBeInTheDocument();
-
       expect(
-        await screen.findByRole("navigation", { name: "Điều hướng chính" }),
-      ).toBeInTheDocument();
-    });
-
-    it("has a chevron that turns down while the button is pressed open", async () => {
-      setup();
-      const button = screen.getByRole("button", { name: "Khám phá" });
-      const chevron = button.querySelector("svg.lucide-chevron-right");
-      expect(chevron).toHaveAttribute("aria-hidden", "true");
-      expect(chevron).toHaveClass("group-aria-expanded:rotate-90");
-      await userEvent.click(button);
-      expect(button).toHaveAttribute("aria-expanded", "true");
-    });
-
-    it("opens on mouse hover, closes on leave", async () => {
-      setup();
-      const button = screen.getByRole("button", { name: "Khám phá" });
-      await userEvent.hover(button);
-      await screen.findByRole("navigation", { name: "Điều hướng chính" });
-      await userEvent.unhover(button);
-      expect(button).toHaveAttribute("aria-expanded", "false");
-      expect(
-        screen.queryByRole("navigation", { name: "Điều hướng chính" }),
+        screen.queryByRole("button", { name: "Khám phá" }),
       ).not.toBeInTheDocument();
     });
 
-    it("closes with Escape and returns focus to the button", async () => {
-      setup();
-      await openExplore();
-      await userEvent.keyboard("{Escape}");
-      const button = screen.getByRole("button", { name: "Khám phá" });
-      expect(button).toHaveAttribute("aria-expanded", "false");
-      expect(button).toHaveFocus();
+    it("is a link with a hard hat to the page it is given", () => {
+      setup({ projectStatusHref: "/dashboard" });
+      const link = screen.getByRole("link", { name: "Project Status" });
+      expect(link).toHaveAttribute("href", "/dashboard");
+      expect(link.querySelector("svg")).toHaveClass("lucide-hard-hat");
+      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(link).not.toHaveAttribute("aria-current");
+    });
+
+    it("marks itself current on its page and deeper paths", () => {
+      pathname.current = "/dashboard/anything";
+      setup({ projectStatusHref: "/dashboard" });
+      expect(
+        screen.getByRole("link", { name: "Project Status" }),
+      ).toHaveAttribute("aria-current", "page");
+    });
+
+    it("can take another label", () => {
+      setup({
+        projectStatusHref: "/status",
+        labels: { projectStatus: "Tiến độ" },
+      });
+      expect(screen.getByRole("link", { name: "Tiến độ" })).toHaveAttribute(
+        "href",
+        "/status",
+      );
     });
   });
 
@@ -699,11 +563,11 @@ describe("AppHeader", () => {
   });
 
   it("is reachable and operable with the keyboard, in reading order", async () => {
-    setup({ unreadNotifications: 1 });
+    setup({ unreadNotifications: 1, projectStatusHref: "/dashboard" });
     const order = [
       /^Baolingo$/,
-      /^Khám phá$/,
       /^Từ điển$/,
+      /^Project Status$/,
       /^Thông báo, có tin chưa đọc$/,
       /^Hồ sơ, 1 mục mới$/,
       /^Facebook Community/,

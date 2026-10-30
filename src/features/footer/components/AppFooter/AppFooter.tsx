@@ -61,10 +61,21 @@ export function AppFooter({
     >
       <Container size="wide">
         <div className="grid gap-8 py-10 md:grid-cols-2 md:gap-10">
-          <Text size="body-sm" color="secondary">
-            <span className="font-medium text-text-primary">{productName}</span>
-            {byline && ` · ${byline}`}
-          </Text>
+          <div className="flex flex-col gap-1">
+            <Text
+              as="p"
+              size="heading-md"
+              weight="bold"
+              className="font-display tracking-tight"
+            >
+              {productName}
+            </Text>
+            {byline && (
+              <Text as="p" size="body-sm" color="secondary">
+                {byline}
+              </Text>
+            )}
+          </div>
 
           {hasLinks && (
             <nav aria-labelledby="footer-links-heading">

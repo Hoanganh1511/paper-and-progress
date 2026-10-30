@@ -16,7 +16,10 @@ export function HomeSidebar({ className, ...props }: HomeSidebarProps) {
   return (
     <aside
       aria-labelledby="home-sidebar-title"
-      className={cn("lg:sticky lg:top-6 lg:self-start", className)}
+      className={cn(
+        "lg:sticky lg:top-[calc(var(--app-header-height,0px)+1.5rem)] lg:self-start",
+        className,
+      )}
       {...props}
     >
       <Card className="gap-5 rounded-soft shadow-modal" lang="vi">

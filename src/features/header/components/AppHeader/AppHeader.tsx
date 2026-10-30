@@ -2,26 +2,20 @@
 
 import {
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
   type ComponentProps,
-  type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   Bookmark,
-  ChevronRight,
-  GraduationCap,
-  Laptop,
   LogIn,
   LogOut,
-  type LucideIcon,
   Moon,
   Settings,
-  Sparkles,
+  ShieldCheck,
   Sun,
   User,
   Zap,
@@ -29,7 +23,6 @@ import {
 import {
   AlertDialog,
   Badge,
-  Button,
   Container,
   DropdownMenu,
   LinkButton,
@@ -45,48 +38,18 @@ import {
   useTheme,
 } from "@/design-system";
 import { FacebookIcon, PandaIcon } from "../icons";
+import { ProjectStatusButton } from "./ProjectStatusButton";
 
 export interface HeaderUser {
   name: string;
   email: string;
 }
 
-export interface HeaderNavItem {
-  label: string;
-  href: string;
-  /** Also current on deeper paths (`/goals` for `/goals/english`). */
-  isSection?: boolean;
-  /** Decorative icon shown before the label; hidden from screen readers. */
-  icon?: LucideIcon;
-  /** The link's own button style, e.g. a background colour. */
-  className?: string;
-}
-
-export const defaultHeaderNavItems: HeaderNavItem[] = [
-  {
-    label: "Công nghệ thông tin",
-    href: "/goals/tech",
-    isSection: true,
-    icon: Laptop,
-    className: "bg-accent-yellow",
-  },
-];
-
 export interface AppHeaderLabels {
   brand: string;
-  /** Accessible name of the page navigation. */
-  navigation: string;
-  /** Visible text of the button that reveals the page links. */
-  explore: string;
   dictionary: string;
-  /** Visible text of the highlighted link to the English goals page. */
-  goals: string;
-  /** Visible text of the call to action. */
-  start: string;
-  /** Language of `start`, e.g. "vi". */
-  startLang: string;
-  /** Plain-language meaning of `start`, read out by screen readers. */
-  startMeaning: string;
+  /** Visible text of the "Project Status" button. */
+  projectStatus: string;
   facebook: string;
   opensInNewTab: string;
   darkMode: string;
@@ -105,6 +68,7 @@ export interface AppHeaderLabels {
   profileInfo: string;
   bookmarks: string;
   settings: string;
+  admin: string;
   /** Visible text of the sign-in button shown while signed out. */
   signIn: string;
   logout: string;
@@ -118,13 +82,8 @@ export interface AppHeaderLabels {
 
 export const defaultAppHeaderLabels: AppHeaderLabels = {
   brand: "Baolingo",
-  navigation: "Điều hướng chính",
-  explore: "Khám phá",
   dictionary: "Từ điển",
-  goals: "Mục tiêu tiếng Anh",
-  start: "Học tập",
-  startLang: "vi",
-  startMeaning: "Bắt đầu học từ đây",
+  projectStatus: "Project Status",
   facebook: "Facebook Community",
   opensInNewTab: "(mở trong tab mới)",
   darkMode: "Chế độ tối",
@@ -139,6 +98,7 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   profileInfo: "Thông tin cá nhân",
   bookmarks: "Bookmarks",
   settings: "Cài đặt",
+  admin: "Quản trị",
   signIn: "Đăng nhập",
   logout: "Đăng xuất",
   logoutTitle: "Đăng xuất khỏi tài khoản?",
@@ -152,10 +112,8 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   brandHref?: string;
   /** Where the dictionary search goes (a plain GET form, `?q=...`). */
   searchAction?: string;
-  /** Where the highlighted goals button leads: the English goals page. */
-  goalsHref?: string;
-  /** Where the call to action leads: the learning page. */
-  learnHref?: string;
+  /** Where the "Project Status" button leads. The button is left out when omitted. */
+  projectStatusHref?: string;
   /** Facebook community page; the link is left out when omitted. */
   facebookHref?: string;
   notificationsHref?: string;
@@ -166,6 +124,8 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   profileHref?: string;
   bookmarksHref?: string;
   settingsHref?: string;
+  /** When set, the account menu gets an "Quản trị" entry (for admins only). */
+  adminHref?: string;
   /** Shown at the top of the account menu; the section is left out when omitted. */
   user?: HeaderUser;
   /** Replaces the avatar menu with a sign-in button. */
@@ -175,8 +135,6 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   onLogout?: () => void;
   /** Small number on the avatar; hidden when 0 or omitted. */
   profileBadge?: number;
-  /** Page links shown in a bar under the main row; none when empty. */
-  navItems?: HeaderNavItem[];
   /** Keep the header at the top while scrolling. */
   isSticky?: boolean;
   /** Replace any of the texts (translations). */
@@ -193,133 +151,6 @@ export const APP_HEADER_HEIGHT_VAR = "--app-header-height";
 
 const fill = (template: string, count: number) =>
   template.replace("{count}", String(count));
-
-/** Length of the Button press animation (`duration-150` in buttonVariants). */
-const PRESS_DURATION_MS = 150;
-
-/**
- * The "Explore" button with the page links it reveals. The links open while
- * a mouse hovers the button or its panel, and for everyone else on click /
- * Enter / Space. Escape or moving focus away closes them. The links stay in
- * the DOM, hidden, so the nav is rendered on the server.
- */
-function ExploreMenu({
-  label,
-  navLabel,
-  children,
-}: {
-  label: string;
-  navLabel: string;
-  children: ReactNode;
-}) {
-  // `isOpen` presses the button at once; `isShown` reveals the panel only
-  // after that press animation has finished (see PRESS_DURATION_MS).
-  const [isOpen, setIsOpen] = useState(false);
-  const [isShown, setIsShown] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // A mouse opens the panel by hovering, so its click must not close it again.
-  const isOpenedByHoverRef = useRef(false);
-  const panelId = useId();
-
-  useEffect(() => () => clearTimeout(timerRef.current), []);
-
-  function setOpen(next: boolean) {
-    clearTimeout(timerRef.current);
-    setIsOpen(next);
-    if (!next) {
-      setIsShown(false);
-      return;
-    }
-    const prefersReducedMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    timerRef.current = setTimeout(
-      () => setIsShown(true),
-      prefersReducedMotion ? 0 : PRESS_DURATION_MS,
-    );
-  }
-
-  return (
-    <div
-      className="order-2 md:relative md:order-2 pl-3"
-      onPointerEnter={(event) => {
-        if (event.pointerType === "mouse" && !isOpen) {
-          isOpenedByHoverRef.current = true;
-          setOpen(true);
-        }
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType === "mouse") {
-          isOpenedByHoverRef.current = false;
-          setOpen(false);
-        }
-      }}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setOpen(false);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && isOpen) {
-          setOpen(false);
-          buttonRef.current?.focus();
-        }
-      }}
-    >
-      <Button
-        ref={buttonRef}
-        variant="accent"
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        onClick={() => {
-          if (isOpenedByHoverRef.current) {
-            isOpenedByHoverRef.current = false;
-            return;
-          }
-          setOpen(!isOpen);
-        }}
-        className="group relative animate-unpress bg-accent-yellow motion-reduce:animate-none aria-expanded:translate-x-1 aria-expanded:translate-y-1 aria-expanded:shadow-none"
-      >
-        <span className="relative inline-flex">
-          <Sparkles
-            aria-hidden="true"
-            size={18}
-            className="animate-twinkle motion-reduce:animate-none"
-          />
-          <Sparkles
-            aria-hidden="true"
-            size={9}
-            className="absolute -top-1.5 -right-2 animate-twinkle [animation-delay:0.5s] motion-reduce:animate-none"
-          />
-          <Sparkles
-            aria-hidden="true"
-            size={7}
-            className="absolute -right-1 -bottom-1.5 animate-twinkle [animation-delay:1s] motion-reduce:animate-none"
-          />
-        </span>
-        <span className="max-sm:sr-only">{label}</span>
-        <ChevronRight
-          aria-hidden="true"
-          size={16}
-          className="shrink-0 transition-transform duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] group-aria-expanded:rotate-90 motion-reduce:transition-none"
-        />
-      </Button>
-      <div
-        id={panelId}
-        hidden={!isShown}
-        className="absolute inset-x-0 top-full z-[var(--z-dropdown)] pt-2 transition-[opacity,translate] duration-150 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none md:inset-x-auto md:left-0 md:w-72"
-      >
-        <nav
-          aria-label={navLabel}
-          className="flex flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-3 shadow-floating"
-        >
-          {children}
-        </nav>
-      </div>
-    </div>
-  );
-}
 
 /**
  * The top bar of the learning app.
@@ -339,8 +170,7 @@ function ExploreMenu({
 export function AppHeader({
   brandHref = "/",
   searchAction = "/dictionary",
-  goalsHref = "/goals/english",
-  learnHref = "/learn",
+  projectStatusHref,
   facebookHref,
   notificationsHref = "/notifications",
   unreadNotifications = 0,
@@ -348,12 +178,12 @@ export function AppHeader({
   profileHref = "/profile",
   bookmarksHref = "/bookmarks",
   settingsHref = "/settings",
+  adminHref,
   user,
   isSignedOut = false,
   signInHref = "/login",
   onLogout,
   profileBadge,
-  navItems = defaultHeaderNavItems,
   isSticky = false,
   labels: labelOverrides,
   className,
@@ -367,12 +197,12 @@ export function AppHeader({
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const isProjectStatusCurrent =
+    projectStatusHref !== undefined &&
+    (pathname === projectStatusHref ||
+      !!pathname?.startsWith(`${projectStatusHref}/`));
   const hasUnread = unreadNotifications > 0;
   const hasBadge = profileBadge !== undefined && profileBadge > 0;
-  const isGoalsCurrent =
-    pathname === goalsHref || !!pathname?.startsWith(`${goalsHref}/`);
-  const isLearnCurrent =
-    pathname === learnHref || !!pathname?.startsWith(`${learnHref}/`);
 
   // Publish the header's height (it changes when the layout wraps) while it
   // is sticky, so the bars beneath it know where to stick.
@@ -426,58 +256,6 @@ export function AppHeader({
             </span>
           </a>
 
-          <ExploreMenu label={labels.explore} navLabel={labels.navigation}>
-            <LinkButton
-              href={goalsHref}
-              variant="accent"
-              leftIcon={GraduationCap}
-              aria-current={isGoalsCurrent ? "page" : undefined}
-              className={cn(
-                "w-full justify-start bg-accent-pink",
-                isGoalsCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-              )}
-            >
-              {labels.goals}
-            </LinkButton>
-
-            {navItems.map((item) => {
-              const isCurrent =
-                pathname === item.href ||
-                (item.isSection && !!pathname?.startsWith(`${item.href}/`));
-              return (
-                <LinkButton
-                  key={item.href}
-                  href={item.href}
-                  variant="accent"
-                  leftIcon={item.icon}
-                  aria-current={isCurrent ? "page" : undefined}
-                  className={cn(
-                    "h-auto min-h-[var(--height-default)] w-full justify-start py-2",
-                    item.className,
-                    isCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-                  )}
-                >
-                  {item.label}
-                </LinkButton>
-              );
-            })}
-
-            <LinkButton
-              href={learnHref}
-              variant="accent"
-              aria-current={isLearnCurrent ? "page" : undefined}
-              className={cn(
-                "w-full justify-start",
-                isLearnCurrent && "translate-x-0.5 translate-y-0.5 shadow-none",
-              )}
-            >
-              <span aria-hidden="true">→</span>
-              <span lang={labels.startLang}>{labels.start}</span>
-              <span aria-hidden="true">♡</span>
-              <span className="sr-only">{`(${labels.startMeaning})`}</span>
-            </LinkButton>
-          </ExploreMenu>
-
           {/* Below md this row is the second line; from md its children join the main row. */}
           <div className="order-3 flex w-full items-center gap-2 md:contents">
             <form
@@ -494,9 +272,17 @@ export function AppHeader({
                 className="shadow-raised animate-unpress transition-[background-color,box-shadow,translate] [animation-delay:120ms] motion-reduce:animate-none focus-within:translate-x-0.5 focus-within:translate-y-0.5 focus-within:shadow-none motion-reduce:transition-none"
               />
             </form>
+            {/* Right beside the search box, and next to it in the tab order too. */}
+            {projectStatusHref && (
+              <ProjectStatusButton
+                href={projectStatusHref}
+                label={labels.projectStatus}
+                isCurrent={isProjectStatusCurrent}
+              />
+            )}
           </div>
 
-          <div className="order-2 ml-auto flex items-center gap-3 md:order-5 md:ml-0">
+          <div className="order-2 ml-auto flex items-center gap-3 md:order-6 md:ml-0">
             <LinkButton
               href={notificationsHref}
               variant="secondary"
@@ -602,6 +388,14 @@ export function AppHeader({
                   >
                     {labels.settings}
                   </MenuItem>
+                  {adminHref && (
+                    <MenuItem
+                      icon={ShieldCheck}
+                      onSelect={() => router.push(adminHref)}
+                    >
+                      {labels.admin}
+                    </MenuItem>
+                  )}
                   <MenuSeparator />
                   <MenuLabel>{labels.accountPreferences}</MenuLabel>
                   {/* A switch in a menu: it stays open so the change can be seen. */}

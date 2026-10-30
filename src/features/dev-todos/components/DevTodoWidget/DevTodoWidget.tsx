@@ -90,7 +90,7 @@ export function DevTodoWidget() {
       // fades out instead of unmounting), and it sits above everything. Without
       // pointer-events-none it would swallow clicks meant for what is behind it,
       // e.g. the header menus. Only the button and an open panel take the mouse.
-      className="pointer-events-none fixed right-4 bottom-4 z-[9999] flex flex-col items-end gap-3"
+      className="pointer-events-none fixed right-4 bottom-24 z-[9999] flex flex-col items-end gap-3"
       onKeyDown={(event) => {
         if (event.key === "Escape") setIsOpen(false);
       }}
@@ -100,7 +100,7 @@ export function DevTodoWidget() {
         aria-label="Dev todo"
         inert={!isOpen}
         className={cn(
-          "flex max-h-[min(42rem,calc(100dvh-6rem))] w-[min(22.5rem,calc(100vw-2rem))] flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-4 text-text-primary shadow-modal",
+          "flex max-h-[min(42rem,calc(100dvh-9rem))] w-[min(22.5rem,calc(100vw-2rem))] flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-4 text-text-primary shadow-modal",
           "origin-bottom-right transition-[opacity,translate,scale,visibility] duration-[var(--duration-normal)] motion-reduce:transition-none",
           isOpen
             ? "pointer-events-auto visible translate-y-0 scale-100 opacity-100"

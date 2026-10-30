@@ -77,6 +77,13 @@
 
 - 4,8,12,16,20,24,32,48,64,96px (mapped tới --spacing-1 đến --spacing-24)
 
+## Layout trang (BẮT BUỘC khi tạo trang mới)
+
+- Body của MỌI trang trong `src/app/` phải cùng chiều rộng và lề ngang với header: bọc nội dung bằng `PageContainer size="wide"` (hoặc `Container size="wide"` khi đã có padding riêng) từ `@/design-system`
+- KHÔNG tự đặt `max-w-*`, `mx-auto`, `px-*` cho khung ngoài cùng của trang; header (`AppHeader`) dùng `Container size="wide"`, trang phải khớp
+- Ngoại lệ chỉ khi trang cố ý hẹp hơn (form đăng nhập, trang đọc): dùng `size="narrow"` hoặc `size="default"`, không dùng giá trị tuỳ ý
+- Sau khi tạo trang, so chiều rộng với header trước khi báo xong
+
 ## Accessibility (bắt buộc cho MỌI component)
 
 - Keyboard accessible, focus ring visible

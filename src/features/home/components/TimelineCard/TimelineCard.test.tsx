@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import type { DevlogEntry } from "@/features/devlog";
@@ -87,10 +87,11 @@ describe("TimelineCard learning logs", () => {
 
   it("lets the visitor pick another day and go back to the newest", async () => {
     render(<TimelineCard entries={entries} />);
-    const date = screen.getByLabelText("Chọn ngày xem nhật ký");
-    expect(date).toHaveValue("2026-10-27");
+    const date = screen.getByRole("button", { name: "Chọn ngày xem nhật ký" });
+    expect(date).toHaveTextContent("27/10/2026");
 
-    fireEvent.change(date, { target: { value: "2026-10-25" } });
+    await userEvent.click(date);
+    await userEvent.click(screen.getByRole("button", { name: "25/10/2026" }));
     expect(screen.getByText("Entry b")).toBeInTheDocument();
     expect(screen.queryByText("Entry a")).not.toBeInTheDocument();
 
@@ -102,8 +103,11 @@ describe("TimelineCard learning logs", () => {
 
   it("says so when a day has nothing", async () => {
     render(<TimelineCard entries={entries} />);
-    const date = screen.getByLabelText("Chọn ngày xem nhật ký");
-    fireEvent.change(date, { target: { value: "2026-01-01" } });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Chọn ngày xem nhật ký" }),
+    );
+    // 1 October 2026: a day in the same month with nothing on it.
+    await userEvent.click(screen.getByRole("button", { name: "01/10/2026" }));
     expect(
       screen.getByText("Chưa có hoạt động nào được ghi lại."),
     ).toBeInTheDocument();

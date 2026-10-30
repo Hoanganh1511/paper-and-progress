@@ -26,6 +26,8 @@ export function SessionHeader({
     return <AppHeader {...props} isSignedOut />;
   }
 
+  const isAdmin = user.role === "ADMIN";
+
   return (
     <AppHeader
       {...props}
@@ -33,6 +35,9 @@ export function SessionHeader({
       profileBadge={profileBadge}
       user={{ name: user.name || user.email, email: user.email }}
       onLogout={logout}
+      adminHref={isAdmin ? "/admin" : undefined}
+      // The project dashboard is for admins only; for anyone else there is no button.
+      projectStatusHref={isAdmin ? "/dashboard" : undefined}
     />
   );
 }

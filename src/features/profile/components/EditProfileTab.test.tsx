@@ -161,3 +161,20 @@ describe("avatar", () => {
     expect(screen.queryByRole("button", { name: "Xoá ảnh" })).toBeNull();
   });
 });
+
+describe("EditProfileTab account sections", () => {
+  it("holds the password form and the coming-soon deactivate / delete options", () => {
+    setup();
+    screen.getByText("Hủy kích hoạt hoặc xóa tài khoản").click();
+    expect(
+      screen.getByRole("button", { name: "Đổi mật khẩu" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Hủy kích hoạt tài khoản" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Xóa tài khoản vĩnh viễn" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Dự kiến ra mắt")).toHaveLength(2);
+  });
+});

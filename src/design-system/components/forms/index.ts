@@ -1,5 +1,6 @@
 export * from "./Checkbox";
 export * from "./Combobox";
+export * from "./DatePicker";
 export * from "./FormField";
 export * from "./Input";
 export * from "./PasswordInput";

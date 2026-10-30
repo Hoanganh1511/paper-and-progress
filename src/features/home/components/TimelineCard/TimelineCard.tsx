@@ -3,11 +3,12 @@
 import { useId, useState, type ComponentProps } from "react";
 import { ArrowRight, Pause, Play, Plus, Rss } from "lucide-react";
 import {
+  DatePicker,
+  datePickerLabelsVi,
   AutoScroll,
   Button,
   Card,
   IconButton,
-  Input,
   LinkButton,
   Text,
   cn,
@@ -39,7 +40,7 @@ const NOTICE_MS = 5000;
 
 /**
  * One day's activity as a vertical timeline that drifts upwards by itself and
- * loops, inside a card of fixed height: the visitor's own learning logs first,
+ * loops, inside a card 80% of the viewport tall: the visitor's own learning logs first,
  * then the devlog entries of the same day. The day starts on the newest one
  * and can be changed with the date field. The buttons stay pinned to the
  * bottom of the card. The drift stops on hover and focus, and the pause button
@@ -88,7 +89,10 @@ export function TimelineCard({
     <Card
       as="section"
       aria-labelledby={titleId}
-      className={cn("h-[30rem] rounded-soft lg:h-[36rem]", className)}
+      // 80% of the viewport, set in CSS alone: no script measures it, so the
+      // card is the same size before and after it loads and the page does not
+      // shift. `dvh` follows a mobile browser's collapsing address bar.
+      className={cn("h-[80dvh] min-h-[26rem] rounded-soft", className)}
       {...props}
     >
       <div className="flex items-start justify-between gap-2">
@@ -115,12 +119,13 @@ export function TimelineCard({
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          type="date"
+        <DatePicker
           size="compact"
           aria-label="Chọn ngày xem nhật ký"
           value={day ?? ""}
-          onChange={(event) => setPickedDate(event.target.value || undefined)}
+          onValueChange={(next) => setPickedDate(next || undefined)}
+          isClearable={false}
+          labels={datePickerLabelsVi}
           className="w-44"
         />
         {pickedDate && pickedDate !== newest && (

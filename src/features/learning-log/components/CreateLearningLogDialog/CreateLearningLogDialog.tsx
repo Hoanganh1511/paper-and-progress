@@ -9,6 +9,8 @@ import {
 } from "react";
 import { PenLine, RotateCcw, X } from "lucide-react";
 import {
+  DatePicker,
+  datePickerLabelsVi,
   Alert,
   AlertDialog,
   Button,
@@ -237,10 +239,11 @@ export function CreateLearningLogDialog({
                 ))}
               </SelectField>
               <FormField label="Ngày học" error={errors.learningDate}>
-                <Input
-                  type="date"
+                <DatePicker
                   value={values.learningDate}
-                  onChange={(event) => set("learningDate", event.target.value)}
+                  onValueChange={(next) => set("learningDate", next)}
+                  isClearable={false}
+                  labels={datePickerLabelsVi}
                 />
               </FormField>
             </div>

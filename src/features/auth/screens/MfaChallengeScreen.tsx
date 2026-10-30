@@ -20,7 +20,7 @@ export function MfaChallengeScreen() {
     setIsSubmitting(true);
     setError(undefined);
     try {
-      await verifyMfa({ mfaToken: ticket, ...values });
+      await verifyMfa({ mfaToken: ticket, code: values.code });
       router.push("/");
     } catch (caught) {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";

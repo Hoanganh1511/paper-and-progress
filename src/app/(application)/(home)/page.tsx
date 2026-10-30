@@ -35,11 +35,15 @@ export default async function HomePage() {
       lang="vi"
       className="px-4 py-8 outline-none sm:px-6 md:py-10"
     >
-      {/* From `lg`: a sidebar, then the cards in three columns. */}
-      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      {/* From `lg`: the sidebar, the cards, and the day's log in the right-most
+          column. Below `lg` the log comes right after the sidebar. */}
+      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_20rem] xl:grid-cols-[18rem_minmax(0,1fr)_24rem]">
         <HomeSidebar />
-        <div className="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <TimelineCard entries={entries} />
+        <TimelineCard
+          entries={entries}
+          className="max-lg:order-2 lg:sticky lg:top-[calc(var(--app-header-height,0px)+1.5rem)] lg:order-3 lg:h-[min(80dvh,calc(100dvh-var(--app-header-height,0px)-3rem))] lg:self-start"
+        />
+        <div className="grid items-start gap-6 max-lg:order-3 md:grid-cols-2 lg:order-2 lg:grid-cols-1 xl:grid-cols-2">
           <ProjectsCard
             projects={computeProjectSummaries(entries, DEVLOG_MODULES)}
           />

@@ -169,6 +169,14 @@
       box-shadow: none;
     }
   }
+  /* Fades in after a short delay, so a column that is opening beside it has
+     started to move first (the criterion detail on the project dashboard). */
+  --animate-fade-in: fade-in 250ms ease-out 150ms backwards;
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
   @keyframes twinkle {
     0%,
     100% {
@@ -344,4 +352,103 @@ body {
     scrollbar-width: unset;
     scrollbar-color: unset;
   }
+}
+
+/* ===== RICH TEXT (TipTap editor content) ===== */
+.rich-text {
+  font-family: var(--font-body, inherit);
+  font-size: var(--text-body-md, 1rem);
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+.rich-text > * + * {
+  margin-top: 0.5em;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3 {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.rich-text h1 {
+  font-size: 1.5em;
+}
+.rich-text h2 {
+  font-size: 1.25em;
+}
+.rich-text h3 {
+  font-size: 1.1em;
+}
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.5em;
+}
+.rich-text ul {
+  list-style: disc;
+}
+.rich-text ol {
+  list-style: decimal;
+}
+.rich-text ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25em;
+}
+.rich-text ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.rich-text ul[data-type="taskList"] li > label {
+  margin-top: 0.3em;
+  flex: none;
+}
+.rich-text ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+.rich-text blockquote {
+  border-left: 3px solid var(--color-border-strong);
+  padding-left: 0.75em;
+  color: var(--color-text-secondary);
+}
+.rich-text code {
+  border-radius: 4px;
+  background: var(--color-surface-sunken);
+  padding: 0.1em 0.3em;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+}
+.rich-text pre {
+  overflow-x: auto;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface-sunken);
+  padding: 0.75em;
+}
+.rich-text pre code {
+  background: none;
+  padding: 0;
+}
+.rich-text hr {
+  border: 0;
+  border-top: 2px solid var(--color-border-strong);
+}
+.rich-text a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rich-text mark {
+  background: var(--color-accent-yellow);
+  color: var(--color-ink, #171717);
+}
+.rich-text p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--color-text-muted);
+}
+.rich-text:focus {
+  outline: none;
 }

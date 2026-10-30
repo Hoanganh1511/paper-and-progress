@@ -28,11 +28,16 @@ describe("AppFooter", () => {
       expect(footer).not.toHaveTextContent("DUA Edu");
     });
 
+    it("shows the product name as a bold display heading, not as small body text", () => {
+      setup();
+      const name = screen.getByText("Paper & Progress");
+      expect(name).toHaveClass("font-bold", "font-display");
+    });
+
     it("can name another product", () => {
       setup({ productName: "Baolingo", byline: "Một sản phẩm của Acme" });
-      expect(screen.getByRole("contentinfo")).toHaveTextContent(
-        "Baolingo · Một sản phẩm của Acme",
-      );
+      expect(screen.getByText("Baolingo")).toBeInTheDocument();
+      expect(screen.getByText("Một sản phẩm của Acme")).toBeInTheDocument();
     });
   });
 

@@ -13,7 +13,7 @@ describe("MfaChallenge", () => {
       screen.getByRole("heading", { name: "Xác thực hai bước" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Dùng mã backup" }),
+      screen.getByRole("button", { name: "Dùng mã khôi phục" }),
     ).toBeInTheDocument();
   });
 
@@ -33,13 +33,13 @@ describe("MfaChallenge", () => {
     const onVerify = vi.fn();
     render(<MfaChallenge onVerify={onVerify} />);
     await userEvent.click(
-      screen.getByRole("button", { name: "Dùng mã backup" }),
+      screen.getByRole("button", { name: "Dùng mã khôi phục" }),
     );
     expect(
-      screen.getByRole("heading", { name: "Dùng mã backup" }),
+      screen.getByRole("heading", { name: "Dùng mã khôi phục" }),
     ).toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText(/^Mã backup/), "abcd-efgh");
+    await userEvent.type(screen.getByLabelText(/^Mã khôi phục/), "abcd-efgh");
     await userEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
     expect(onVerify).toHaveBeenCalledWith({
       code: "abcd-efgh",
@@ -58,11 +58,11 @@ describe("MfaChallenge", () => {
     const onVerify = vi.fn();
     render(<MfaChallenge onVerify={onVerify} />);
     await userEvent.click(
-      screen.getByRole("button", { name: "Dùng mã backup" }),
+      screen.getByRole("button", { name: "Dùng mã khôi phục" }),
     );
     await userEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
-    expect(screen.getByText("Nhập mã backup.")).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Mã backup/)).toHaveFocus();
+    expect(screen.getByText("Nhập mã khôi phục.")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mã khôi phục/)).toHaveFocus();
     expect(onVerify).not.toHaveBeenCalled();
   });
 
@@ -70,7 +70,7 @@ describe("MfaChallenge", () => {
     const { container } = render(<MfaChallenge onVerify={() => {}} />);
     expect(await axe(container)).toHaveNoViolations();
     await userEvent.click(
-      screen.getByRole("button", { name: "Dùng mã backup" }),
+      screen.getByRole("button", { name: "Dùng mã khôi phục" }),
     );
     expect(await axe(container)).toHaveNoViolations();
   });

@@ -23,13 +23,13 @@ export const defaultMfaChallengeLabels: MfaChallengeLabels = {
   otpTitle: "Xác thực hai bước",
   otpDescription: "Nhập mã {length} số từ ứng dụng xác thực của bạn.",
   otpSubmit: "Xác nhận",
-  useBackupCode: "Dùng mã backup",
-  backupTitle: "Dùng mã backup",
+  useBackupCode: "Dùng mã khôi phục",
+  backupTitle: "Dùng mã khôi phục",
   backupDescription:
-    "Nhập một trong các mã backup bạn đã lưu khi bật xác thực hai bước. Mỗi mã chỉ dùng được một lần.",
-  backupCode: "Mã backup",
+    "Nhập một trong các mã khôi phục (dạng xxxx-xxxx) bạn đã lưu khi bật xác thực hai bước. Mỗi mã chỉ dùng được một lần.",
+  backupCode: "Mã khôi phục",
   backupSubmit: "Xác nhận",
-  backupRequired: "Nhập mã backup.",
+  backupRequired: "Nhập mã khôi phục.",
   useAuthenticator: "Dùng mã từ ứng dụng xác thực",
 };
 

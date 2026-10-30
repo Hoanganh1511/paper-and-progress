@@ -64,7 +64,7 @@ describe("ProfileScreen", () => {
 
   it("keeps the editing tabs off this page", () => {
     render(<ProfileScreen />);
-    for (const name of ["Chỉnh sửa", "Bảo mật", "Tùy chọn"]) {
+    for (const name of ["Tài khoản", "Bảo mật & Quyền", "Tùy chọn"]) {
       expect(screen.queryByRole("tab", { name })).toBeNull();
     }
   });

@@ -21,8 +21,8 @@ export const SETTINGS_HREF = "/settings";
 
 const ALL_TABS: Record<ProfileTabId, ProfileTab> = {
   overview: { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
-  personal: { id: "personal", label: "Chỉnh sửa", icon: User },
-  security: { id: "security", label: "Bảo mật", icon: ShieldCheck },
+  personal: { id: "personal", label: "Tài khoản", icon: User },
+  security: { id: "security", label: "Bảo mật & Quyền", icon: ShieldCheck },
   preferences: {
     id: "preferences",
     label: "Tùy chọn",
