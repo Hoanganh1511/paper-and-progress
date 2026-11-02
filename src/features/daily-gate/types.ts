@@ -161,3 +161,71 @@ export interface CalendarDay {
   isToday: boolean;
   isPast: boolean;
 }
+
+/** Where a phrase of the notebook is in the 4-step method: its next step. */
+export type PhraseStage = "WRITE" | "RECALL" | "SPEAK" | "MASTERED";
+
+export interface Phrase {
+  id: string;
+  /** The lesson word it was saved from; null for a phrase the user typed in. */
+  wordId: number | null;
+  phrase: string;
+  /** The user's own words for what it means. */
+  meaning: string;
+  sampleSentence: string | null;
+  stage: PhraseStage;
+  intervalDays: number;
+  /** `YYYY-MM-DD` */
+  nextReviewAt: string;
+  easyStreak: number;
+  speakPassed: boolean;
+  createdAt: string;
+}
+
+export interface PhraseSummary {
+  total: number;
+  mastered: number;
+  /** Phrases that still wait for their first sentence. */
+  unwritten: number;
+  due: number;
+  /** Days in a row with any activity in the notebook (its own streak, not the gate's). */
+  streak: number;
+  practicedToday: boolean;
+}
+
+export interface NewPhrase {
+  phrase: string;
+  meaning: string;
+  sampleSentence?: string;
+  wordId?: number;
+}
+
+export type PhraseChanges = Partial<Omit<NewPhrase, "wordId">>;
+
+export type RecallGrade = "FORGOT" | "HARD" | "EASY";
+
+export interface ReviewInput {
+  /** The phrase as the user typed it from memory. */
+  answer: string;
+  usedHint: boolean;
+  grade: RecallGrade;
+  /** A new sentence with the phrase; required for HARD and EASY. */
+  sentence?: string;
+}
+
+export interface ReviewResult {
+  isAnswerCorrect: boolean;
+  phrase: Phrase;
+}
+
+export interface PhraseExampleResult {
+  example: { id: string; text: string };
+  phrase: Phrase;
+}
+
+export interface SpokenResult {
+  containsPhrase: boolean;
+  /** Indexes of the transcript's words (split like `tokenize`) that matched the phrase. */
+  matchedIndexes: number[];
+  phrase: Phrase;
+}

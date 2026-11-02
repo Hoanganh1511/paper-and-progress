@@ -143,3 +143,12 @@ export const listAdminSecurityEvents = (
       params: clean(query),
     }),
   );
+
+/** Changes what a user may do. The role applies to them from their next token refresh. */
+export const setAdminUserRole = (id: string, role: AdminUser["role"]) =>
+  call(
+    authedApi.patch<{ id: string; role: AdminUser["role"] }>(
+      `/admin/users/${id}/role`,
+      { role },
+    ),
+  );

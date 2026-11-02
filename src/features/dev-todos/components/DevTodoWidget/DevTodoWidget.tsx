@@ -100,7 +100,7 @@ export function DevTodoWidget() {
         aria-label="Dev todo"
         inert={!isOpen}
         className={cn(
-          "flex max-h-[min(42rem,calc(100dvh-9rem))] w-[min(22.5rem,calc(100vw-2rem))] flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-4 text-text-primary shadow-modal",
+          "flex max-h-[min(42rem,calc(100dvh-15rem))] w-[min(22.5rem,calc(100vw-2rem))] flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-4 text-text-primary shadow-modal",
           "origin-bottom-right transition-[opacity,translate,scale,visibility] duration-[var(--duration-normal)] motion-reduce:transition-none",
           isOpen
             ? "pointer-events-auto visible translate-y-0 scale-100 opacity-100"
@@ -163,7 +163,7 @@ export function DevTodoWidget() {
           </select>
         </div>
 
-        <ul className="flex min-h-64 flex-1 flex-col gap-2 overflow-y-auto p-1">
+        <ul className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto p-1">
           {state === "loading" && (
             <li role="status">
               <Text size="body-sm" color="secondary">

@@ -14,6 +14,7 @@ import { useAdminQuery } from "../useAdminQuery";
 import { LoginHistoryTable } from "./LoginHistoryTable";
 import { ProviderBadges } from "./ProviderBadges";
 import { QueryError } from "./QueryError";
+import { RoleControl } from "./RoleControl";
 import { TablePager } from "./TablePager";
 import { TwoFactorStatus } from "./TwoFactorStatus";
 
@@ -73,7 +74,13 @@ export function UserDetailScreen({ userId }: { userId: string }) {
         {detail ? (
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Tên hiển thị">{detail.displayName ?? "—"}</Field>
-            <Field label="Role">{detail.role}</Field>
+            <Field label="Role">
+              <RoleControl
+                userId={detail.id}
+                role={detail.role}
+                onChanged={user.reload}
+              />
+            </Field>
             <Field label="Trạng thái">
               <Badge variant={detail.isActive ? "success" : "danger"} size="sm">
                 {detail.isActive ? "Hoạt động" : "Bị khoá"}

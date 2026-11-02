@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpenCheck } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpenCheck, LogIn } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, cn } from "@/design-system";
 import { useAuth } from "@/features/auth";
 import { useAdminQuery } from "@/features/admin/useAdminQuery";
@@ -22,9 +24,33 @@ export interface DailyGateLauncherProps {
  * The button shows whether today's lesson is done yet.
  */
 export function DailyGateLauncher(props: DailyGateLauncherProps) {
-  const { isAuthenticated } = useAuth();
-  // The hooks below only run for a signed-in user: the lesson has no meaning before that.
-  return isAuthenticated ? <Launcher {...props} /> : null;
+  const { isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
+  // The hooks in Launcher only run for a signed-in user: the lesson has no meaning before that.
+  if (isAuthenticated) return <Launcher {...props} />;
+  // Signed-out visitors get a way to sign in instead; not while the session is
+  // being restored (it would flash), and not on the auth pages themselves.
+  if (isLoading || pathname === "/login") return null;
+  return <SignInLink {...props} />;
+}
+
+const cornerButtonClasses =
+  "fixed right-4 z-[9998] flex size-12 cursor-pointer items-center justify-center rounded-pill border-2 border-border-strong text-ink shadow-accent transition-[translate,box-shadow] duration-[var(--duration-fast)] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus active:translate-x-0.5 active:translate-y-0.5 active:shadow-none";
+
+function SignInLink({ hasDevTodo = false }: DailyGateLauncherProps) {
+  return (
+    <Link
+      href="/login"
+      aria-label="Đăng nhập"
+      className={cn(
+        cornerButtonClasses,
+        "bg-accent-lime",
+        hasDevTodo ? "bottom-[9.75rem]" : "bottom-24",
+      )}
+    >
+      <LogIn aria-hidden="true" size={22} />
+    </Link>
+  );
 }
 
 function Launcher({ hasDevTodo = false }: DailyGateLauncherProps) {

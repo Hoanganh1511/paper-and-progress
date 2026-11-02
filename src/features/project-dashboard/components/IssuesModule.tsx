@@ -7,7 +7,7 @@ import { useAdminQuery } from "@/features/admin/useAdminQuery";
 import { useDashboard } from "../DashboardContext";
 import { ISSUE_BADGE_VARIANT, ISSUE_LABELS, STATUS_ICONS } from "../display";
 import { getIssues } from "../projectDashboardApi";
-import { toPlainText } from "../richText";
+import { toPlainText } from "@/features/rich-text";
 import type { IssueItem } from "../types";
 import { CollapseToggle, useCollapse } from "./CollapseToggle";
 import { ModuleError } from "./ModuleError";

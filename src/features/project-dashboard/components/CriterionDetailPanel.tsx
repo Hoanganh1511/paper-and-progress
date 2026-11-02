@@ -39,7 +39,7 @@ import {
 import type { CriterionDetail, CriterionPatch } from "../types";
 import { ActivityTimeline } from "./ActivityModule";
 import { ModuleError } from "./ModuleError";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "@/features/rich-text";
 import { StatusPicker } from "./StatusPicker";
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;

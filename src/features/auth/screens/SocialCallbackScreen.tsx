@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, LinkButton, Stack } from "@/design-system";
 import { AuthSplash } from "../components/AuthSplash";
 import { AuthApiError } from "../authApi";
+import { peekNext } from "../authRedirect";
 import { useAuth } from "../hooks";
 import { AUTH_ERROR_MESSAGES, SOCIAL_CALLBACK_ERRORS } from "../messages";
 
@@ -46,7 +47,7 @@ export function SocialCallbackScreen() {
       }
       try {
         await loginWithTokens({ accessToken, refreshToken });
-        router.replace("/");
+        router.replace(peekNext("/"));
       } catch (caught) {
         const failure =
           caught instanceof AuthApiError ? caught.code : "unknown";

@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { vi } from "vitest";
-import { toEditorContent, toPlainText } from "../richText";
+import { toEditorContent, toPlainText } from "./richText";
 import { RichTextEditor } from "./RichTextEditor";
 
 expect.extend(toHaveNoViolations);

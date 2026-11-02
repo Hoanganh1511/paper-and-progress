@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AuthSplash } from "../components/AuthSplash";
+import { peekNext } from "../authRedirect";
 import { useAuth } from "../hooks";
 
 export interface GuestGateProps {
@@ -28,7 +29,8 @@ export function GuestGate({
   const shouldRedirect = isAuthenticated && !allowedPaths.includes(pathname);
 
   useEffect(() => {
-    if (shouldRedirect) router.replace(homeHref);
+    // Back to the page that asked for the sign-in, when there was one.
+    if (shouldRedirect) router.replace(peekNext(homeHref));
   }, [shouldRedirect, router, homeHref]);
 
   // The forms show right away; only a confirmed session replaces them.

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Stack } from "@/design-system";
 import { LoginForm } from "../components/LoginForm";
 import { SocialLoginButtons } from "../components/SocialLoginButtons";
 import { AuthApiError } from "../authApi";
+import { isSafeNext, peekNext, rememberNext } from "../authRedirect";
 import { useAuth, useRateLimit } from "../hooks";
 import { loginLabels, socialLoginLabels } from "../labels";
 import { describeAuthError, rateLimitedMessage } from "../messages";
@@ -26,6 +27,11 @@ export function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const rateLimit = useRateLimit();
+  const next = params.get("next");
+  // Kept for the steps after this form (two-factor, a social provider); a plain visit forgets an old one.
+  useEffect(() => {
+    rememberNext(isSafeNext(next) ? next : null);
+  }, [next]);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   /** Leaves for the provider through the backend, which sends the visitor back to /auth/callback. */
@@ -51,7 +57,7 @@ export function LoginScreen() {
         );
         return;
       }
-      router.push("/");
+      router.push(peekNext("/"));
     } catch (caught) {
       if (rateLimit.handle(caught)) {
         setError(undefined);

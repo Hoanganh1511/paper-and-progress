@@ -37,6 +37,11 @@ const api = vi.hoisted(() => ({
   submitTest: vi.fn(),
   getStats: vi.fn(),
   getCalendar: vi.fn(),
+  listPhrases: vi.fn(),
+  getPhraseSummary: vi.fn(),
+  createPhrase: vi.fn(),
+  updatePhrase: vi.fn(),
+  deletePhrase: vi.fn(),
 }));
 vi.mock("../dailyGateApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../dailyGateApi")>()),
@@ -201,6 +206,7 @@ const passedResult = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  api.listPhrases.mockResolvedValue([]);
   api.getToday.mockResolvedValue(today());
   api.getCalendar.mockResolvedValue(calendar);
   api.getLearn.mockResolvedValue(learn);

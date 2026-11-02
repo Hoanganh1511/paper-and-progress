@@ -28,6 +28,7 @@ const api = vi.hoisted(() => ({
   getAdminUser: vi.fn(),
   listAdminLoginHistory: vi.fn(),
   listAdminSecurityEvents: vi.fn(),
+  setAdminUserRole: vi.fn(),
 }));
 vi.mock("../adminApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../adminApi")>()),
@@ -112,14 +113,20 @@ beforeEach(() => {
 });
 
 describe("AdminShell", () => {
-  it("lists the four sections and marks the current one", () => {
+  it("lists the five sections and marks the current one", () => {
     render(<AdminShell>body</AdminShell>);
     const nav = screen.getByRole("navigation", { name: "Admin" });
     expect(
       within(nav)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["Overview", "Users", "Login History", "Security Events"]);
+    ).toEqual([
+      "Overview",
+      "Users",
+      "Articles",
+      "Login History",
+      "Security Events",
+    ]);
     expect(within(nav).getByRole("link", { name: "Users" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -213,6 +220,53 @@ describe("UserDetailScreen", () => {
       page: 1,
       limit: 20,
     });
+  });
+});
+
+describe("UserDetailScreen: role", () => {
+  it("changes the role only after confirming, and shows the server's refusal", async () => {
+    api.setAdminUserRole.mockResolvedValueOnce({ id: "u1", role: "CREATOR" });
+    render(<UserDetailScreen userId="u1" />);
+    await screen.findByRole("heading", { level: 1, name: "an@example.com" });
+    const change = screen.getByRole("button", { name: "Đổi role" });
+    expect(change).toBeDisabled(); // nothing picked yet
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Role" }));
+    await userEvent.click(
+      await screen.findByRole("option", { name: "CREATOR" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Đổi role" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(api.setAdminUserRole).not.toHaveBeenCalled();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Đổi role" }),
+    );
+    await waitFor(() =>
+      expect(api.setAdminUserRole).toHaveBeenCalledWith("u1", "CREATOR"),
+    );
+    // The page reads the user again and gets the new role: the message must survive that.
+    api.getAdminUser.mockResolvedValue({ ...user, role: "CREATOR" });
+    expect(await screen.findByText(/Đã đổi sang CREATOR/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(api.getAdminUser.mock.calls.length).toBeGreaterThan(1),
+    );
+    expect(screen.getByText(/Đã đổi sang CREATOR/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đổi role" })).toBeDisabled();
+
+    api.setAdminUserRole.mockRejectedValueOnce(
+      new Error("Bạn không thể đổi role của chính mình."),
+    );
+    await userEvent.click(screen.getByRole("combobox", { name: "Role" }));
+    await userEvent.click(await screen.findByRole("option", { name: "ADMIN" }));
+    await userEvent.click(screen.getByRole("button", { name: "Đổi role" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Đổi role",
+      }),
+    );
+    expect(
+      await screen.findByText("Bạn không thể đổi role của chính mình."),
+    ).toBeInTheDocument();
   });
 });
 

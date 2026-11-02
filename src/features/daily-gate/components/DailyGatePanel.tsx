@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Alert, Button, Skeleton } from "@/design-system";
+import {
+  Alert,
+  Button,
+  Skeleton,
+  TabList,
+  TabPanel,
+  TabTrigger,
+  Tabs,
+} from "@/design-system";
 import { useAdminQuery, type AdminQuery } from "@/features/admin/useAdminQuery";
 import {
   completeLearn,
+  createPhrase,
   getCalendar,
   getLearn,
   getPractice,
+  listPhrases,
   getTest,
   submitPractice,
   submitTest,
@@ -16,11 +26,13 @@ import type { Step } from "../display";
 import type { ActiveToday, InactiveToday, TodayResponse } from "../types";
 import { GateLanding } from "./GateLanding";
 import { LearnPhase } from "./LearnPhase";
+import { PhraseNotebook } from "./PhraseNotebook";
 import { PracticePhase } from "./PracticePhase";
 import { StatsView } from "./StatsView";
 import { TestPhase } from "./TestPhase";
 
 type View = "landing" | "stats" | Step;
+type Tab = "lesson" | "notebook";
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : "Có lỗi xảy ra. Thử lại sau.";
@@ -42,6 +54,7 @@ export function DailyGatePanel({
 }: DailyGatePanelProps) {
   const [version, setVersion] = useState(0);
   const [view, setView] = useState<View>("landing");
+  const [tab, setTab] = useState<Tab>("lesson");
 
   const calendar = useAdminQuery(getCalendar, `calendar-${version}`);
   const refresh = () => {
@@ -135,7 +148,28 @@ export function DailyGatePanel({
     );
   }
 
-  return <div className="flex flex-col gap-4">{body}</div>;
+  const lesson = <div className="flex flex-col gap-4">{body}</div>;
+
+  // During a step the whole modal belongs to the step; the tabs come back with the landing page.
+  if (view === "learn" || view === "practice" || view === "test") return lesson;
+
+  return (
+    <Tabs
+      variant="pill"
+      value={tab}
+      onValueChange={(value) => setTab(value as Tab)}
+    >
+      <TabList aria-label="Daily English">
+        <TabTrigger value="lesson">Bài hôm nay</TabTrigger>
+        <TabTrigger value="notebook">Sổ cụm từ</TabTrigger>
+      </TabList>
+      <TabPanel value="lesson">{lesson}</TabPanel>
+      <TabPanel value="notebook">
+        {/* Only when opened: the notebook loads its own data. */}
+        {tab === "notebook" && <PhraseNotebook />}
+      </TabPanel>
+    </Tabs>
+  );
 }
 
 function NoLesson({
@@ -216,6 +250,13 @@ function LearnStep({
   onBack: () => void;
 }) {
   const query = useAdminQuery(getLearn, "gate-learn");
+  // Which phrases are saved already; if this fails the lesson still works, just without "Đã lưu".
+  const saved = useAdminQuery(() => listPhrases(), "gate-learn-saved");
+  const savedWordIds = new Set(
+    (saved.data ?? []).flatMap((phrase) =>
+      phrase.wordId === null ? [] : [phrase.wordId],
+    ),
+  );
   return (
     <PhaseFrame
       isLoading={!query.data}
@@ -227,6 +268,20 @@ function LearnStep({
         <LearnPhase
           lesson={query.data}
           onBack={onBack}
+          savedWordIds={savedWordIds}
+          onSavePhrase={async (word, values) => {
+            try {
+              await createPhrase({
+                phrase: values.phrase,
+                meaning: values.meaning,
+                sampleSentence: values.sampleSentence || undefined,
+                wordId: word.id,
+              });
+              return undefined;
+            } catch (error) {
+              return messageOf(error);
+            }
+          }}
           onComplete={async () => {
             try {
               await completeLearn(today.lessonId);

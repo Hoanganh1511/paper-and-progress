@@ -20,6 +20,12 @@
   --color-accent-yellow: #ffd56a;
   --color-accent-blue: #8caeff;
 
+  /* Learning calendar: how much a day has in it, from a little to a lot (all take dark text) */
+  --color-activity-1: #eef8c9;
+  --color-activity-2: #d8f29a;
+  --color-activity-3: #a9dc45;
+  --color-activity-4: #78b72e;
+
   /* Feedback */
   --color-success-bg: #e5f5d8;
   --color-success-text: #28642f;
@@ -451,4 +457,54 @@ body {
 }
 .rich-text:focus {
   outline: none;
+}
+
+/* Articles: images, tables, headings that the table of contents links to, and code colours from lowlight. */
+.rich-text img {
+  max-width: 100%;
+  height: auto;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+}
+.rich-text table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid var(--color-border-strong);
+}
+.rich-text th,
+.rich-text td {
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.4em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.rich-text th {
+  background: var(--color-surface-sunken);
+  font-weight: 700;
+}
+.rich-text h2,
+.rich-text h3 {
+  scroll-margin-top: calc(var(--app-header-height, 4rem) + 1rem);
+}
+.rich-text .hljs-comment,
+.rich-text .hljs-quote {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.rich-text .hljs-keyword,
+.rich-text .hljs-selector-tag,
+.rich-text .hljs-built_in {
+  color: var(--color-info-text);
+  font-weight: 700;
+}
+.rich-text .hljs-string,
+.rich-text .hljs-attr,
+.rich-text .hljs-regexp {
+  color: var(--color-success-text);
+}
+.rich-text .hljs-number,
+.rich-text .hljs-literal,
+.rich-text .hljs-title,
+.rich-text .hljs-function {
+  color: var(--color-danger-text);
 }

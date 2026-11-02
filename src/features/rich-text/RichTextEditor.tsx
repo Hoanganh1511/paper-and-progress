@@ -2,8 +2,9 @@
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
-import type { Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import type { Editor, Extensions, JSONContent } from "@tiptap/react";
+import type { EditorProps } from "@tiptap/pm/view";
+import StarterKit, { type StarterKitOptions } from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
@@ -35,7 +36,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button, Input, cn } from "@/design-system";
-import { toEditorContent } from "../richText";
+import { toEditorContent } from "./richText";
 
 export interface RichTextEditorProps {
   /** The stored value: HTML, or plain text from before the editor existed. */
@@ -50,6 +51,20 @@ export interface RichTextEditorProps {
   onCommit?: (html: string) => void;
   /** Called on every change; use it to keep a form's state. */
   onChange?: (html: string) => void;
+  /** Called on every change with the document as JSON (the source of truth for articles). */
+  onChangeJson?: (json: JSONContent) => void;
+  /** Loaded instead of `value` when given. */
+  initialJson?: JSONContent;
+  /** Extra TipTap extensions (images, tables, ...), added after the built-in ones. */
+  extensions?: Extensions;
+  /** Overrides for the built-in StarterKit, e.g. `{ codeBlock: false }` to bring your own. */
+  starterKitOptions?: Partial<StarterKitOptions>;
+  /** Merged into the editor props, e.g. to handle image paste and drop. */
+  editorProps?: Omit<EditorProps, "attributes">;
+  /** Extra toolbar buttons, shown after the built-in groups. */
+  renderToolbarExtras?: (editor: Editor) => ReactNode;
+  /** Receives the editor once it exists, so a parent can insert content into it. */
+  onEditorReady?: (editor: Editor) => void;
   className?: string;
 }
 
@@ -119,7 +134,7 @@ function toolbarState(editor: Editor) {
   };
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, extras }: { editor: Editor; extras?: ReactNode }) {
   const state = useEditorState({
     editor,
     selector: ({ editor }) => toolbarState(editor),
@@ -299,6 +314,12 @@ function Toolbar({ editor }: { editor: Editor }) {
             {group}
           </div>
         ))}
+        {extras && (
+          <div className="flex items-center">
+            <Divider />
+            {extras}
+          </div>
+        )}
       </div>
       {isLinkOpen && (
         <form
@@ -343,6 +364,13 @@ export function RichTextEditor({
   placeholder = "Viết mô tả...",
   onCommit,
   onChange,
+  onChangeJson,
+  initialJson,
+  extensions = [],
+  starterKitOptions,
+  editorProps,
+  renderToolbarExtras,
+  onEditorReady,
   className,
 }: RichTextEditorProps) {
   const isDirty = useRef(false);
@@ -353,15 +381,19 @@ export function RichTextEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         link: { openOnClick: false, autolink: true },
+        ...starterKitOptions,
       }),
       Highlight,
       TaskList,
       TaskItem.configure({ nested: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
+      ...extensions,
     ],
-    content: toEditorContent(value),
+    content: initialJson ?? toEditorContent(value),
+    onCreate: ({ editor: created }) => onEditorReady?.(created),
     editorProps: {
+      ...editorProps,
       attributes: {
         class: "rich-text min-h-32 px-3 py-2 outline-none",
         role: "textbox",
@@ -372,6 +404,7 @@ export function RichTextEditor({
     onUpdate: ({ editor: current }) => {
       isDirty.current = true;
       onChange?.(current.isEmpty ? "" : current.getHTML());
+      onChangeJson?.(current.getJSON());
     },
     onBlur: ({ editor: current }) => {
       if (!isDirty.current) return;
@@ -387,7 +420,9 @@ export function RichTextEditor({
         className,
       )}
     >
-      {editor && <Toolbar editor={editor} />}
+      {editor && (
+        <Toolbar editor={editor} extras={renderToolbarExtras?.(editor)} />
+      )}
       <EditorContent editor={editor} />
     </div>
   );

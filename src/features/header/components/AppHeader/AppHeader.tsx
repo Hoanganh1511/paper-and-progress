@@ -14,6 +14,9 @@ import {
   LogIn,
   LogOut,
   Moon,
+  Newspaper,
+  PenLine,
+  BookmarkCheck,
   Settings,
   ShieldCheck,
   Sun,
@@ -69,6 +72,9 @@ export interface AppHeaderLabels {
   bookmarks: string;
   settings: string;
   admin: string;
+  articles: string;
+  savedArticles: string;
+  writeArticles: string;
   /** Visible text of the sign-in button shown while signed out. */
   signIn: string;
   logout: string;
@@ -99,6 +105,9 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   bookmarks: "Bookmarks",
   settings: "Cài đặt",
   admin: "Quản trị",
+  articles: "Bài viết",
+  savedArticles: "Bài viết đã lưu",
+  writeArticles: "Viết bài",
   signIn: "Đăng nhập",
   logout: "Đăng xuất",
   logoutTitle: "Đăng xuất khỏi tài khoản?",
@@ -126,6 +135,12 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   settingsHref?: string;
   /** When set, the account menu gets an "Quản trị" entry (for admins only). */
   adminHref?: string;
+  /** The articles list. A button beside the search; left out when omitted. */
+  articlesHref?: string;
+  /** The signed-in user's saved articles; an entry in the account menu. */
+  savedArticlesHref?: string;
+  /** The author's writing area; an entry in the account menu, for authors and admins only. */
+  writeHref?: string;
   /** Shown at the top of the account menu; the section is left out when omitted. */
   user?: HeaderUser;
   /** Replaces the avatar menu with a sign-in button. */
@@ -179,6 +194,9 @@ export function AppHeader({
   bookmarksHref = "/bookmarks",
   settingsHref = "/settings",
   adminHref,
+  articlesHref,
+  savedArticlesHref,
+  writeHref,
   user,
   isSignedOut = false,
   signInHref = "/login",
@@ -201,6 +219,9 @@ export function AppHeader({
     projectStatusHref !== undefined &&
     (pathname === projectStatusHref ||
       !!pathname?.startsWith(`${projectStatusHref}/`));
+  const isArticlesCurrent =
+    articlesHref !== undefined &&
+    (pathname === articlesHref || !!pathname?.startsWith(`${articlesHref}/`));
   const hasUnread = unreadNotifications > 0;
   const hasBadge = profileBadge !== undefined && profileBadge > 0;
 
@@ -283,6 +304,23 @@ export function AppHeader({
           </div>
 
           <div className="order-2 ml-auto flex items-center gap-3 md:order-6 md:ml-0">
+            {articlesHref && (
+              <LinkButton
+                href={articlesHref}
+                variant="secondary"
+                leftIcon={Newspaper}
+                aria-label={labels.articles}
+                aria-current={isArticlesCurrent ? "page" : undefined}
+                className={cn(
+                  // Icon only on phones, icon and name from md.
+                  "animate-unpress max-md:aspect-square max-md:px-0 [animation-delay:200ms] motion-reduce:animate-none",
+                  isArticlesCurrent &&
+                    "bg-accent-lime text-ink hover:bg-accent-lime",
+                )}
+              >
+                <span className="max-md:sr-only">{labels.articles}</span>
+              </LinkButton>
+            )}
             <LinkButton
               href={notificationsHref}
               variant="secondary"
@@ -382,6 +420,22 @@ export function AppHeader({
                   >
                     {labels.bookmarks}
                   </MenuItem>
+                  {savedArticlesHref && (
+                    <MenuItem
+                      icon={BookmarkCheck}
+                      onSelect={() => router.push(savedArticlesHref)}
+                    >
+                      {labels.savedArticles}
+                    </MenuItem>
+                  )}
+                  {writeHref && (
+                    <MenuItem
+                      icon={PenLine}
+                      onSelect={() => router.push(writeHref)}
+                    >
+                      {labels.writeArticles}
+                    </MenuItem>
+                  )}
                   <MenuItem
                     icon={Settings}
                     onSelect={() => router.push(settingsHref)}

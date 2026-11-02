@@ -40,7 +40,7 @@ export function LearningItemCard({
   className,
   ...props
 }: LearningItemCardProps) {
-  const level = LEVELS[item.level];
+  const level = item.level ? LEVELS[item.level] : undefined;
 
   return (
     <Card
@@ -51,17 +51,23 @@ export function LearningItemCard({
       {...props}
     >
       <CardHeader>
-        <Inline justify="between" gap={2}>
-          <Badge variant={level.variant} size="sm">
-            {level.label}
-          </Badge>
-          <Inline gap={1} className="text-text-muted">
-            <Clock aria-hidden="true" size={14} />
-            <Text as="span" size="caption" color="muted">
-              {item.duration}
-            </Text>
+        {(level || item.duration) && (
+          <Inline justify="between" gap={2}>
+            {level && (
+              <Badge variant={level.variant} size="sm">
+                {level.label}
+              </Badge>
+            )}
+            {item.duration && (
+              <Inline gap={1} className="text-text-muted">
+                <Clock aria-hidden="true" size={14} />
+                <Text as="span" size="caption" color="muted">
+                  {item.duration}
+                </Text>
+              </Inline>
+            )}
           </Inline>
-        </Inline>
+        )}
         <Text as="h3" size="heading-sm" weight="semibold">
           {item.href ? (
             <a
@@ -83,14 +89,16 @@ export function LearningItemCard({
           {item.description}
         </Text>
       </CardContent>
-      <CardFooter>
-        <Inline gap={1} className="text-text-muted">
-          <BookOpen aria-hidden="true" size={14} />
-          <Text as="span" size="caption" color="muted">
-            {item.lessons} bài học
-          </Text>
-        </Inline>
-      </CardFooter>
+      {(item.lessons !== undefined || item.meta) && (
+        <CardFooter>
+          <Inline gap={1} className="text-text-muted">
+            <BookOpen aria-hidden="true" size={14} />
+            <Text as="span" size="caption" color="muted">
+              {item.meta ?? `${item.lessons} bài học`}
+            </Text>
+          </Inline>
+        </CardFooter>
+      )}
     </Card>
   );
 }

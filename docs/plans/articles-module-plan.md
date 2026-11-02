@@ -400,3 +400,32 @@ Mỗi lần: `npx tsc --noEmit`, `npx eslint . --max-warnings 0`, `npx vitest ru
 - **ISR + cache cũ:** sau khi đổi visibility từ Public sang Members Only phải revalidate ngay, nếu không bản cũ còn công khai tới 1 giờ.
 - **Dung lượng bundle:** import `lowlight` bản `common` (không phải `all`); tải editor bằng `next/dynamic` vì chỉ trang soạn thảo cần.
 - **Mã nguồn bên ngoài:** nội dung ảnh/embed người dùng nhập có thể tải từ domain lạ; giới hạn `img-src` bằng CSP khi đưa lên production.
+
+---
+
+## Trạng thái triển khai (2026-11-01)
+
+Bước 1 đến 10 đã làm xong ở cả backend và frontend. Những chỗ khác với plan ở trên:
+
+| Plan | Thực tế | Lý do |
+|---|---|---|
+| `/articles/new`, `/articles/[id]/edit` | `/write`, `/write/new`, `/write/[id]`, `/write/[id]/preview` | `/articles/[slug]` và `/articles/[id]/edit` cùng cấp nên Next báo lỗi tên tham số động khác nhau |
+| `export const revalidate = 3600` | `'use cache'` + `cacheTag` + `revalidateTag(tag, { expire: 0 })` | Dự án bật `cacheComponents`, không dùng được route segment config; `expire: 0` để đổi Public sang Members Only có hiệu lực ngay |
+| Route trong `(marketing)` có layout riêng | Chỉ thư mục `(marketing)`, không layout | Chỉ cần nằm ngoài `(application)/AuthGate` |
+| Xem trước bằng `?preview=1` | Trang `/write/[id]/preview` (client, có token) | Trang `[slug]` được cache chung nên không thể chứa bản nháp |
+| `@nestjs/cache-manager` | `ioredis` trực tiếp (`ArticleCacheService`) | Cần `SCAN` để xoá theo tiền tố; cache-manager không hỗ trợ |
+| `DatePicker` + ô giờ | `<input type="datetime-local">` | Một ô, dùng được trên mobile |
+| `RichTextEditor` ở `project-dashboard` | Chuyển sang `features/rich-text`, thêm props mở rộng | Dùng chung, không viết lại |
+| Layout gốc | Bọc `SessionHeader`, `HideOnRoutes`, `DailyGateLauncher` trong `Suspense` | Chúng đọc `usePathname()`, làm route động không prerender được |
+
+Chưa làm: lối vào `/articles` từ giao diện chính (sidebar trang chủ được thiết kế là "ba nút của header", nên cần quyết định đặt link ở đâu).
+Chưa kiểm bằng tay: editor ở 375px và bằng bàn phím, upload thật lên S3, Lighthouse SEO.
+
+### Nối thành luồng hoàn chỉnh (2026-11-01)
+
+Đã chạy thật trên trình duyệt: khách (xem bài preview, thẻ đăng nhập), độc giả (đăng nhập quay lại đúng bài, phản hồi, lưu, bình luận, danh sách đã lưu), tác giả CREATOR (viết, lưu nháp, xem trước, xuất bản, sửa, lịch sử phiên bản và khôi phục), admin (thống kê bài, đổi role).
+
+- Header có nút **Bài viết**; menu tài khoản có **Bài viết đã lưu** (mọi người dùng) và **Viết bài** (CREATOR, ADMIN).
+- Trang bài có đường dẫn quay về danh sách và nút **Sửa bài** cho tác giả/admin.
+- Đăng nhập xong quay lại trang đang đọc: `?next=` (chỉ nhận đường dẫn nội bộ), giữ qua 2FA và đăng nhập mạng xã hội, `AuthGate` tự thêm cho trang cần đăng nhập. Mã: `features/auth/authRedirect.ts`.
+- Admin đổi role user ở `/admin/users/[id]` (`PATCH /admin/users/:id/role`); không đổi được role của chính mình. Role nằm trong token nên có hiệu lực từ lần refresh kế tiếp.

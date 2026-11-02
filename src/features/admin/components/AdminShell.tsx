@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  FileText,
   LayoutDashboard,
   ShieldAlert,
   Users,
@@ -21,6 +22,7 @@ interface NavItem {
 export const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/articles", label: "Articles", icon: FileText },
   { href: "/admin/login-history", label: "Login History", icon: Activity },
   {
     href: "/admin/security-events",

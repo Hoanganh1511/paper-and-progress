@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MfaChallenge } from "../components/MfaChallenge";
 import { AuthApiError } from "../authApi";
+import { peekNext } from "../authRedirect";
 import { useAuth } from "../hooks";
 import { AUTH_ERROR_MESSAGES, describeAuthError } from "../messages";
 
@@ -21,7 +22,7 @@ export function MfaChallengeScreen() {
     setError(undefined);
     try {
       await verifyMfa({ mfaToken: ticket, code: values.code });
-      router.push("/");
+      router.push(peekNext("/"));
     } catch (caught) {
       const code = caught instanceof AuthApiError ? caught.code : "unknown";
       if (code === "account_suspended") router.push("/account-suspended");

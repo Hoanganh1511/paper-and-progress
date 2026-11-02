@@ -8,10 +8,13 @@ export interface LearningItem {
   id: string;
   title: string;
   description: string;
-  level: LearningLevel;
+  /** Courses state these; a topic from the knowledge base has none of them. */
+  level?: LearningLevel;
   /** Human readable, e.g. "6 giờ". */
-  duration: string;
-  lessons: number;
+  duration?: string;
+  lessons?: number;
+  /** A short line under the description, e.g. "3 bài viết · 1 lộ trình". */
+  meta?: string;
   /** When set, the whole card links here. */
   href?: string;
 }

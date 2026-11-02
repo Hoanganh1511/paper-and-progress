@@ -2,6 +2,8 @@ import type {
   ActiveToday,
   GateProgress,
   LessonType,
+  Phrase,
+  PhraseStage,
   VocabSection,
 } from "./types";
 
@@ -50,3 +52,34 @@ export function formatClock(totalSeconds: number) {
 }
 
 export const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+export const PHRASE_STAGE_LABELS: Record<PhraseStage, string> = {
+  WRITE: "Chưa đặt câu",
+  RECALL: "Cần nhớ lại",
+  SPEAK: "Cần luyện nói",
+  MASTERED: "Đã thuộc",
+};
+
+/** Steps of the method done so far (1 = learned, 4 = all four). */
+export const PHRASE_STEPS_DONE: Record<PhraseStage, number> = {
+  WRITE: 1,
+  RECALL: 2,
+  SPEAK: 3,
+  MASTERED: 4,
+};
+
+/** True for a phrase typed as one word, which is better learned with its partners. */
+export const isSingleWord = (phrase: string) =>
+  phrase.trim().split(/\s+/).filter(Boolean).length === 1;
+
+/** "2026-11-06" -> "06/11" */
+export const formatShortDate = (date: string) =>
+  `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+
+/** Phrases in the order of the notebook: those to review first, then by date. */
+export const sortPhrases = (phrases: Phrase[]) =>
+  [...phrases].sort(
+    (a, b) =>
+      a.nextReviewAt.localeCompare(b.nextReviewAt) ||
+      a.createdAt.localeCompare(b.createdAt),
+  );

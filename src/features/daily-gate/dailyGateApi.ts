@@ -5,6 +5,14 @@ import type {
   GateProgress,
   GateStats,
   LearnResponse,
+  NewPhrase,
+  Phrase,
+  PhraseChanges,
+  PhraseExampleResult,
+  PhraseSummary,
+  ReviewInput,
+  ReviewResult,
+  SpokenResult,
   PracticeAnswerValue,
   PracticeResponse,
   PracticeResult,
@@ -85,3 +93,39 @@ export const getStats = () => call(authedApi.get<GateStats>(`${base}/stats`));
 
 export const getCalendar = () =>
   call(authedApi.get<CalendarDay[]>(`${base}/calendar`));
+
+const phrases = `${base}/phrases`;
+
+/** With `isDue`, only the phrases to review today (not those still waiting for a sentence). */
+export const listPhrases = (options: { isDue?: boolean } = {}) =>
+  call(
+    authedApi.get<Phrase[]>(phrases, {
+      params: options.isDue ? { due: "true" } : undefined,
+    }),
+  );
+
+export const getPhraseSummary = () =>
+  call(authedApi.get<PhraseSummary>(`${phrases}/summary`));
+
+export const createPhrase = (phrase: NewPhrase) =>
+  call(authedApi.post<Phrase>(phrases, phrase));
+
+export const updatePhrase = (id: string, changes: PhraseChanges) =>
+  call(authedApi.patch<Phrase>(`${phrases}/${id}`, changes));
+
+export const deletePhrase = (id: string) =>
+  call(authedApi.delete<{ deleted: true }>(`${phrases}/${id}`));
+
+/** Step 2: a sentence with the phrase. The first one starts the review schedule. */
+export const addPhraseExample = (id: string, text: string) =>
+  call(
+    authedApi.post<PhraseExampleResult>(`${phrases}/${id}/examples`, { text }),
+  );
+
+/** Step 3: the server checks the typed answer itself and rejects a grade it does not allow. */
+export const reviewPhrase = (id: string, input: ReviewInput) =>
+  call(authedApi.post<ReviewResult>(`${phrases}/${id}/review`, input));
+
+/** Step 4: only the transcript is sent; the server decides whether it contains the phrase. */
+export const recordSpoken = (id: string, transcript: string) =>
+  call(authedApi.post<SpokenResult>(`${phrases}/${id}/spoken`, { transcript }));
