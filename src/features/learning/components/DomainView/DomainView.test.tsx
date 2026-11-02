@@ -95,7 +95,7 @@ describe("DomainView", () => {
     Reflect.deleteProperty(window, "matchMedia");
   });
 
-  it("renders the category buttons and a main region with every category in order", () => {
+  it("renders the category buttons and every category in order", () => {
     render(<DomainView domain={domain} />);
     const nav = screen.getByRole("navigation", {
       name: "Phân loại trong lĩnh vực Công nghệ",
@@ -106,10 +106,12 @@ describe("DomainView", () => {
         .map((b) => b.textContent),
     ).toEqual(["Lập trình", "Dữ liệu", "DevOps"]);
 
-    const main = screen.getByRole("main");
     expect(
-      within(main)
-        .getAllByRole("heading", { level: 2 })
+      screen
+        .getAllByRole("heading", { level: 3 })
+        .filter((h) =>
+          ["Lập trình", "Dữ liệu", "DevOps"].includes(h.textContent ?? ""),
+        )
         .map((h) => h.textContent),
     ).toEqual(["Lập trình", "Dữ liệu", "DevOps"]);
   });
@@ -131,15 +133,15 @@ describe("DomainView", () => {
     expect(within(data).getAllByRole("listitem")).toHaveLength(1);
   });
 
-  it("offsets sections and the nav below the sticky tab bar and the sticky app header", () => {
+  it("offsets sections and the nav below the sticky app header", () => {
     render(<DomainView domain={domain} />);
     expect(section("programming")).toHaveClass(
-      "scroll-mt-[calc(var(--app-header-height,0px)+7rem)]",
+      "scroll-mt-[calc(var(--app-header-height,0px)+4.5rem)]",
       "md:scroll-mt-[calc(var(--app-header-height,0px)+5rem)]",
     );
     expect(screen.getByRole("navigation")).toHaveClass(
       "sticky",
-      "top-[calc(var(--app-header-height,0px)+2.75rem)]",
+      "top-[var(--app-header-height,0px)]",
       "md:top-[calc(var(--app-header-height,0px)+5rem)]",
     );
   });
@@ -161,7 +163,7 @@ describe("DomainView", () => {
       block: "start",
     });
     expect(
-      screen.getByRole("heading", { level: 2, name: "DevOps" }),
+      screen.getByRole("heading", { level: 3, name: "DevOps" }),
     ).toHaveFocus();
     expect(screen.getByRole("button", { name: "DevOps" })).toHaveAttribute(
       "aria-current",

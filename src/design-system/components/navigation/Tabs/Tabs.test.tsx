@@ -28,6 +28,43 @@ function Example(props: Partial<TabsProps>) {
 
 const tab = (name: string) => screen.getByRole("tab", { name });
 
+describe("Tabs: folder variant", () => {
+  const folder = (
+    <Tabs variant="folder" defaultValue="one">
+      <TabList aria-label="Folder">
+        <TabTrigger value="one">One</TabTrigger>
+        <TabTrigger value="two">Two</TabTrigger>
+      </TabList>
+      <TabPanel value="one">First</TabPanel>
+      <TabPanel value="two">Second</TabPanel>
+    </Tabs>
+  );
+
+  it("makes ears that hang over the panel, the open one lime and in front", async () => {
+    render(folder);
+    const open = screen.getByRole("tab", { name: "One" });
+    expect(open).toHaveClass("-mb-0.5", "rounded-t-[1.25rem]", "border-2");
+    expect(open).toHaveClass(
+      "aria-selected:z-10",
+      "aria-selected:bg-accent-lime",
+      "aria-selected:border-b-accent-lime",
+    );
+    // At least 44px tall.
+    expect(open).toHaveClass("h-14");
+    await userEvent.click(screen.getByRole("tab", { name: "Two" }));
+    expect(screen.getByRole("tab", { name: "Two" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByText("Second")).toBeVisible();
+  });
+
+  it("has no axe violations", async () => {
+    const { container } = render(folder);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
 describe("Tabs", () => {
   it("renders a labelled tablist with tabs and the selected panel", () => {
     render(<Example />);

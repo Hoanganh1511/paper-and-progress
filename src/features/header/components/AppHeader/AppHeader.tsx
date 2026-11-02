@@ -7,10 +7,13 @@ import {
   useState,
   type ComponentProps,
 } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   Bookmark,
+  Crown,
+  History,
   LogIn,
   LogOut,
   Moon,
@@ -43,14 +46,30 @@ import {
 import { FacebookIcon, PandaIcon } from "../icons";
 import { ProjectStatusButton } from "./ProjectStatusButton";
 
+/** A small crown over the bottom-right corner of an avatar; it only decorates, the name says "hội viên". */
+function MemberCrown() {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="member-crown"
+      className="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-pill border-2 border-border-strong bg-accent-yellow text-ink"
+    >
+      <Crown size={11} />
+    </span>
+  );
+}
+
 export interface HeaderUser {
   name: string;
   email: string;
+  /** The line under the name, e.g. "Thành viên miễn phí"; the email is shown until it is known. */
+  status?: string;
 }
 
 export interface AppHeaderLabels {
   brand: string;
-  dictionary: string;
+  /** Name and placeholder of the search box. */
+  search: string;
   /** Visible text of the "Project Status" button. */
   projectStatus: string;
   facebook: string;
@@ -71,6 +90,10 @@ export interface AppHeaderLabels {
   profileInfo: string;
   bookmarks: string;
   settings: string;
+  membership: string;
+  /** Added to the avatar button's name for a member, after a comma. */
+  memberOnAvatar: string;
+  orderHistory: string;
   admin: string;
   articles: string;
   savedArticles: string;
@@ -88,7 +111,7 @@ export interface AppHeaderLabels {
 
 export const defaultAppHeaderLabels: AppHeaderLabels = {
   brand: "Baolingo",
-  dictionary: "Từ điển",
+  search: "Tìm kiếm",
   projectStatus: "Project Status",
   facebook: "Facebook Community",
   opensInNewTab: "(mở trong tab mới)",
@@ -101,9 +124,12 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
   notificationsUnread: "Thông báo, có tin chưa đọc",
   score: "{count} điểm",
   profile: "Hồ sơ",
-  profileInfo: "Thông tin cá nhân",
+  profileInfo: "Hồ sơ cá nhân",
   bookmarks: "Bookmarks",
   settings: "Cài đặt",
+  membership: "Hội viên",
+  memberOnAvatar: "hội viên",
+  orderHistory: "Lịch sử giao dịch",
   admin: "Quản trị",
   articles: "Bài viết",
   savedArticles: "Bài viết đã lưu",
@@ -119,7 +145,7 @@ export const defaultAppHeaderLabels: AppHeaderLabels = {
 
 export interface AppHeaderProps extends ComponentProps<"header"> {
   brandHref?: string;
-  /** Where the dictionary search goes (a plain GET form, `?q=...`). */
+  /** Where the search goes (a plain GET form, `?q=...`); the one search over topics, resources, articles and paths. */
   searchAction?: string;
   /** Where the "Project Status" button leads. The button is left out when omitted. */
   projectStatusHref?: string;
@@ -139,6 +165,14 @@ export interface AppHeaderProps extends ComponentProps<"header"> {
   articlesHref?: string;
   /** The signed-in user's saved articles; an entry in the account menu. */
   savedArticlesHref?: string;
+  /** The membership page; an entry in the account menu. */
+  membershipHref?: string;
+  /** A short badge on the membership entry, e.g. "Nâng cấp". */
+  membershipBadge?: string;
+  /** A member: a small crown sits on the corner of the avatar. */
+  isMember?: boolean;
+  /** The reader's membership orders; an entry in the account menu. */
+  orderHistoryHref?: string;
   /** The author's writing area; an entry in the account menu, for authors and admins only. */
   writeHref?: string;
   /** Shown at the top of the account menu; the section is left out when omitted. */
@@ -171,7 +205,7 @@ const fill = (template: string, count: number) =>
  * The top bar of the learning app.
  *
  * - Left: the panda logo and the name.
- * - Right: Facebook community, the dictionary search, notifications, score
+ * - Right: Facebook community, the search, notifications, score
  *   and profile.
  * - Below that: a scrollable bar with the highlighted English goals button,
  *   the "start learning" call to action, and the page nav links.
@@ -184,7 +218,7 @@ const fill = (template: string, count: number) =>
  */
 export function AppHeader({
   brandHref = "/",
-  searchAction = "/dictionary",
+  searchAction = "/search",
   projectStatusHref,
   facebookHref,
   notificationsHref = "/notifications",
@@ -196,6 +230,10 @@ export function AppHeader({
   adminHref,
   articlesHref,
   savedArticlesHref,
+  membershipHref,
+  membershipBadge,
+  isMember = false,
+  orderHistoryHref,
   writeHref,
   user,
   isSignedOut = false,
@@ -264,7 +302,7 @@ export function AppHeader({
     >
       <Container size="wide">
         <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2 py-2 md:h-16 md:flex-nowrap md:py-0">
-          <a
+          <Link
             href={brandHref}
             className={cn(
               "order-1 inline-flex min-h-11 shrink-0 items-center gap-2 rounded-sharp",
@@ -275,7 +313,7 @@ export function AppHeader({
             <span className="font-display text-heading-sm font-bold text-text-primary">
               {labels.brand}
             </span>
-          </a>
+          </Link>
 
           {/* Below md this row is the second line; from md its children join the main row. */}
           <div className="order-3 flex w-full items-center gap-2 md:contents">
@@ -287,8 +325,8 @@ export function AppHeader({
             >
               <SearchInput
                 name="q"
-                aria-label={labels.dictionary}
-                placeholder={labels.dictionary}
+                aria-label={labels.search}
+                placeholder={labels.search}
                 autoComplete="off"
                 className="shadow-raised animate-unpress transition-[background-color,box-shadow,translate] [animation-delay:120ms] motion-reduce:animate-none focus-within:translate-x-0.5 focus-within:translate-y-0.5 focus-within:shadow-none motion-reduce:transition-none"
               />
@@ -358,17 +396,20 @@ export function AppHeader({
                 <MenuTrigger>
                   <button
                     type="button"
-                    aria-label={
-                      hasBadge
-                        ? `${labels.profile}, ${fill(labels.profileBadge, profileBadge)}`
-                        : labels.profile
-                    }
+                    aria-label={[
+                      labels.profile,
+                      hasBadge && fill(labels.profileBadge, profileBadge),
+                      isMember && labels.memberOnAvatar,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
                     className={cn(
                       "relative inline-flex size-11 cursor-pointer items-center justify-center rounded-pill",
                       focusRingClasses,
                     )}
                   >
                     <PandaIcon className="size-9" />
+                    {isMember && <MemberCrown />}
                     {hasBadge && (
                       <Badge
                         variant="danger"
@@ -392,17 +433,21 @@ export function AppHeader({
                   {user && (
                     <div
                       role="presentation"
-                      className="mb-1 flex items-center gap-3 rounded-standard border-2 border-border-strong bg-accent-lime p-3 text-ink"
+                      className="mb-1 flex items-center gap-3 border-b-2 border-border-strong px-3 pt-1 pb-3"
                     >
-                      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill border-2 border-border-strong bg-surface-card">
+                      <span className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-pill border-2 border-border-strong bg-accent-lime">
                         <PandaIcon className="size-8" />
+                        {isMember && <MemberCrown />}
                       </span>
                       <div className="min-w-0">
-                        <p className="m-0 truncate font-display text-body-md font-bold">
+                        <p className="m-0 truncate font-display text-body-md font-bold text-text-primary">
                           {user.name}
                         </p>
-                        <p className="m-0 truncate font-body text-body-sm">
-                          {user.email}
+                        <p
+                          className="m-0 truncate font-body text-body-sm text-text-secondary"
+                          title={user.email}
+                        >
+                          {user.status ?? user.email}
                         </p>
                       </div>
                     </div>
@@ -426,6 +471,29 @@ export function AppHeader({
                       onSelect={() => router.push(savedArticlesHref)}
                     >
                       {labels.savedArticles}
+                    </MenuItem>
+                  )}
+                  {membershipHref && (
+                    <MenuItem
+                      icon={Crown}
+                      onSelect={() => router.push(membershipHref)}
+                      trailing={
+                        membershipBadge && (
+                          <Badge variant="lime" size="sm">
+                            {membershipBadge}
+                          </Badge>
+                        )
+                      }
+                    >
+                      {labels.membership}
+                    </MenuItem>
+                  )}
+                  {orderHistoryHref && (
+                    <MenuItem
+                      icon={History}
+                      onSelect={() => router.push(orderHistoryHref)}
+                    >
+                      {labels.orderHistory}
                     </MenuItem>
                   )}
                   {writeHref && (

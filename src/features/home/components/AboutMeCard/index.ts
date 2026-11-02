@@ -1,0 +1,1 @@
+export { AboutMeCard } from "./AboutMeCard";

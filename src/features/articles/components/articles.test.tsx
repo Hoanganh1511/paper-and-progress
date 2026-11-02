@@ -43,6 +43,7 @@ vi.mock("../articlesApi", async (importOriginal) => ({
   ...api,
 }));
 
+import { ArticlesApiError } from "../articlesApi";
 import { articleJsonLd } from "./JsonLd";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleList } from "./ArticleList";
@@ -91,6 +92,7 @@ const preview = (): PreviewArticle => {
     visibility: "PREVIEW",
     gated: true,
     fullAvailable: true,
+    reason: "LOGIN",
     previewHtml: "<p>Đoạn đầu của bài.</p>",
   };
 };
@@ -129,7 +131,7 @@ describe("ArticleCard", () => {
     );
     expect(screen.getByText("3 phút đọc")).toBeInTheDocument();
     expect(screen.getByText("NestJS")).toBeInTheDocument();
-    expect(screen.getByText("Thành viên")).toBeInTheDocument();
+    expect(screen.getByText("Hội viên")).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 });
@@ -186,20 +188,41 @@ describe("TableOfContents", () => {
 });
 
 describe("GatedOverlay", () => {
-  it("shows the start of the text and asks the guest to sign in", () => {
+  it("shows the start of the text and asks the guest to sign in or become a member", () => {
     render(<GatedOverlay previewHtml="<p>Đoạn đầu</p>" />);
     expect(screen.getByText("Đoạn đầu")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Đăng nhập" })).toHaveAttribute(
       "href",
       "/login",
     );
-    expect(screen.getByRole("link", { name: "Đăng ký" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Đăng ký hội viên" }),
+    ).toHaveAttribute("href", "/membership");
+  });
+
+  it("a signed-in non-member is asked to become a member, not to sign in again", () => {
+    render(<GatedOverlay reason="MEMBERSHIP" previewHtml="<p>Đoạn đầu</p>" />);
+    expect(
+      screen.getByRole("heading", { name: "Đăng ký hội viên để đọc tiếp" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Đăng nhập" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Đăng ký hội viên" }),
+    ).toHaveAttribute("href", "/membership");
+  });
+
+  it("while the server is still checking, it shows no prompt", () => {
+    render(<GatedOverlay reason="CHECKING" previewHtml="<p>Đoạn đầu</p>" />);
+    expect(screen.getByRole("status")).toHaveTextContent("Đang kiểm tra");
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
   it("members-only: only the excerpt, no text", () => {
     render(<GatedOverlay excerpt="Chỉ có tóm tắt" />);
     expect(screen.getByText("Chỉ có tóm tắt")).toBeInTheDocument();
-    expect(screen.getByText(/dành cho thành viên/)).toBeInTheDocument();
+    expect(screen.getByText(/dành cho hội viên/)).toBeInTheDocument();
   });
 });
 
@@ -292,7 +315,7 @@ describe("ArticleReader", () => {
   it("a guest on a preview article gets the cut text and the sign-in card, never the full text", () => {
     read({ kind: "preview", article: preview() });
     expect(screen.getByText("Đoạn đầu của bài.")).toBeInTheDocument();
-    expect(screen.getByText("Đăng nhập để đọc tiếp")).toBeInTheDocument();
+    expect(screen.getByText("Bài viết dành cho hội viên")).toBeInTheDocument();
     expect(
       screen.queryByText("Toàn bộ nội dung bài viết."),
     ).not.toBeInTheDocument();
@@ -307,19 +330,52 @@ describe("ArticleReader", () => {
     expect(
       await screen.findByText("Toàn bộ nội dung bài viết."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Đăng nhập để đọc tiếp")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Bài viết dành cho hội viên"),
+    ).not.toBeInTheDocument();
     expect(api.getFullArticle).toHaveBeenCalledWith("hello");
+  });
+
+  it("a signed-in reader who is not a member keeps the cut text and is asked to become one", async () => {
+    auth = { isAuthenticated: true, isLoading: false, user: { id: "u9" } };
+    api.getFullArticle.mockResolvedValue({
+      ...preview(),
+      reason: "MEMBERSHIP",
+    });
+    read({ kind: "preview", article: preview() });
+    expect(
+      await screen.findByText("Đăng ký hội viên để đọc tiếp"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Đoạn đầu của bài.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Toàn bộ nội dung bài viết."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("a members-only article is a 403 for a non-member, who is asked to become one", async () => {
+    auth = { isAuthenticated: true, isLoading: false, user: { id: "u9" } };
+    api.getFullArticle.mockRejectedValue(
+      new ArticlesApiError("Đăng ký hội viên để đọc bài viết này.", 403),
+    );
+    read({
+      kind: "locked",
+      article: { title: "Bài kín", excerpt: "Chỉ hội viên" },
+    });
+    expect(
+      await screen.findByText("Đăng ký hội viên để đọc tiếp"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("a guest on a members-only article sees the title and excerpt only", () => {
     read({
       kind: "locked",
-      article: { title: "Bài kín", excerpt: "Chỉ thành viên" },
+      article: { title: "Bài kín", excerpt: "Chỉ hội viên" },
     });
     expect(
       screen.getByRole("heading", { name: "Bài kín" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/dành cho thành viên/)).toBeInTheDocument();
+    expect(screen.getByText(/dành cho hội viên/)).toBeInTheDocument();
     expect(
       screen.queryByRole("group", { name: "Phản hồi bài viết" }),
     ).not.toBeInTheDocument();

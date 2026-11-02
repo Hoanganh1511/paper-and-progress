@@ -321,6 +321,42 @@ describe("DailyActivityPanel", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("shows the English Logs written on that day, with a way into them", () => {
+    localStorage.setItem(
+      "pp.english-diary.logs",
+      JSON.stringify([
+        {
+          id: "a",
+          title: "Daily English – Travel",
+          skill: "vocabulary",
+          date: "2026-11-14",
+          createdAt: "2026-11-14T01:00:00Z",
+          status: "completed",
+          vocabulary: [],
+          resources: [],
+          tags: [],
+          goal: "",
+          content: "",
+          notes: "",
+          isArchived: false,
+        },
+      ]),
+    );
+    render(
+      <DailyActivityPanel
+        {...panel({ data: dayWith("2026-11-14", [activity("DAILY_LESSON")]) })}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Ghi chép trong ngày" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Daily English – Travel")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Mở English Logs" }),
+    ).toHaveAttribute("href", "/goals/english/diary");
+    localStorage.clear();
+  });
+
   it("an activity is read-only unless its module gave it a link", () => {
     render(
       <DailyActivityPanel
@@ -449,7 +485,7 @@ describe("LearningCalendarSection", () => {
     expect(await screen.findByText("Title DAILY_LESSON")).toBeInTheDocument();
     // The box is the page: it has the page's one h1, then what is being tracked.
     expect(
-      screen.getByRole("heading", { level: 1, name: "Mục tiêu học tiếng Anh" }),
+      screen.getByRole("heading", { level: 1, name: "Nhật ký học Tiếng Anh" }),
     ).toBeInTheDocument();
     // The goal sits beside the title as plain text: no chips, cards or badges.
     expect(screen.getByText("Mục tiêu B2")).toBeInTheDocument();

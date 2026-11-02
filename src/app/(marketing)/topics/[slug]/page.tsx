@@ -32,7 +32,7 @@ async function TopicContent({
       <PageHeader
         title={detail.topic.name}
         breadcrumbs={[
-          { label: "Học tập", href: "/learn" },
+          { label: "Thư viện kiến thức", href: "/learn" },
           ...detail.breadcrumb.map((crumb) => ({ label: crumb.name })),
           { label: detail.topic.name },
         ]}

@@ -267,6 +267,7 @@ function LearnStep({
       {query.data && (
         <LearnPhase
           lesson={query.data}
+          save={{ lessonId: today.lessonId, date: today.date }}
           onBack={onBack}
           savedWordIds={savedWordIds}
           onSavePhrase={async (word, values) => {

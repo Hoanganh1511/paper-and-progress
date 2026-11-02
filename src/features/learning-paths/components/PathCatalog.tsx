@@ -16,14 +16,18 @@ export function PathCatalog({ paths }: { paths: PathSummary[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {paths.map((path) => {
-        const level = LEVEL_LABEL[path.level];
+        const level = path.level ? LEVEL_LABEL[path.level] : null;
         return (
           <li key={path.slug}>
             <Card padding="compact" interactive className="relative h-full">
               <div className="flex items-center justify-between gap-2">
-                <Badge variant={level.variant} size="sm">
-                  {level.label}
-                </Badge>
+                {level ? (
+                  <Badge variant={level.variant} size="sm">
+                    {level.label}
+                  </Badge>
+                ) : (
+                  <span />
+                )}
                 {path.totalMinutes !== null && (
                   <span className="flex items-center gap-1 text-text-muted">
                     <Clock aria-hidden="true" size={14} />

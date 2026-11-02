@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, type MouseEvent } from "react";
+import { type ComponentProps, type MouseEvent, type ReactNode } from "react";
 import { type LucideIcon } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../../utils/cn";
@@ -38,6 +38,8 @@ export interface MenuItemProps
   role?: "menuitem" | "menuitemcheckbox";
   /** Shown on the right, e.g. "⌘K". Display only: it does not bind the key. */
   shortcut?: string;
+  /** Shown on the right, e.g. a badge. Display only. */
+  trailing?: ReactNode;
   destructive?: boolean;
   /** Called when the item is chosen by click, Enter or Space. The menu then closes. */
   onSelect?: () => void;
@@ -47,6 +49,7 @@ export function MenuItem({
   icon: Icon,
   role = "menuitem",
   shortcut,
+  trailing,
   disabled = false,
   destructive = false,
   onSelect,
@@ -91,6 +94,7 @@ export function MenuItem({
     >
       {Icon && <Icon aria-hidden="true" size={16} className="shrink-0" />}
       <span className="flex-1">{children}</span>
+      {trailing && <span className="shrink-0">{trailing}</span>}
       {shortcut && (
         <kbd className="shrink-0 font-body text-caption text-text-muted">
           {shortcut}

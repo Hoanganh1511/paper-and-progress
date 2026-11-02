@@ -5,5 +5,7 @@ export {
   fetchDomains,
   fetchLearningDomains,
   fetchTopic,
+  fetchTopicCounts,
 } from "./knowledgeData";
+export type { TopicCounts } from "./knowledgeData";
 export type * from "./types";

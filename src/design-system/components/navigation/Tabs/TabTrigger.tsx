@@ -7,8 +7,8 @@ import { focusRingClasses } from "../../../primitives/FocusRing";
 import { getPanelId, getTabId, useTabs } from "./TabsContext";
 
 // Class names are written out in full so Tailwind can detect them statically.
-// Both variants are 44px tall (h-11) for the touch target; the selected state
-// shows as an underline or a filled pill, never by color alone.
+// Every variant is at least 44px tall for the touch target; the selected state
+// shows as an underline, a filled pill or an open folder tab, never by colour alone.
 const tabTriggerVariants = cva(
   [
     "inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 font-body text-body-md font-medium whitespace-nowrap",
@@ -24,6 +24,12 @@ const tabTriggerVariants = cva(
           "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-transparent aria-selected:after:bg-action-primary",
         ],
         pill: "rounded-pill px-4 text-text-secondary hover:bg-surface-card aria-selected:bg-accent-lime aria-selected:font-semibold aria-selected:text-ink",
+        // A folder tab: it hangs 2px over the top border of the panel below. The open one is lime and in front, and its bottom edge is lime too, so it hides that border and runs into the lime band of the panel; the others keep a black bottom edge that joins the border.
+        folder: [
+          "h-14 flex-1 rounded-t-[1.25rem] border-2 border-border-strong bg-surface-card px-5 text-lg font-bold text-text-primary hover:bg-surface-sunken sm:h-[3.75rem] sm:flex-none sm:px-8",
+          "relative -mb-0.5 aria-selected:z-10 aria-selected:border-b-accent-lime aria-selected:bg-accent-lime aria-selected:text-ink aria-selected:hover:bg-accent-lime",
+          "motion-reduce:transition-none",
+        ],
       },
     },
   },

@@ -50,6 +50,8 @@ const user = {
   isActive: true,
   createdAt: "2026-10-01T03:00:00.000Z",
   totpEnabled: true,
+  isMember: true,
+  membershipExpiresAt: "2027-01-15T00:00:00.000Z",
   providers: ["local", "google"],
   lastLoginAt: "2026-10-29T03:00:00.000Z",
 };
@@ -113,7 +115,7 @@ beforeEach(() => {
 });
 
 describe("AdminShell", () => {
-  it("lists the five sections and marks the current one", () => {
+  it("lists the six sections and marks the current one", () => {
     render(<AdminShell>body</AdminShell>);
     const nav = screen.getByRole("navigation", { name: "Admin" });
     expect(
@@ -124,6 +126,7 @@ describe("AdminShell", () => {
       "Overview",
       "Users",
       "Articles",
+      "Membership",
       "Login History",
       "Security Events",
     ]);
@@ -164,6 +167,10 @@ describe("UsersScreen", () => {
     expect(await screen.findByText("an@example.com")).toBeInTheDocument();
     expect(screen.getByText("Google")).toBeInTheDocument();
     expect(screen.getByText("ON")).toBeInTheDocument();
+    expect(
+      screen.getByText("Hội viên", { selector: "span" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/đến/)).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
 
     await userEvent.type(screen.getByLabelText("Tìm theo email"), "an@");

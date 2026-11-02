@@ -12,6 +12,7 @@ import {
 import { PAGE_SIZE, formatDateTime } from "../format";
 import { useAdminQuery } from "../useAdminQuery";
 import { LoginHistoryTable } from "./LoginHistoryTable";
+import { MembershipControl } from "./MembershipControl";
 import { ProviderBadges } from "./ProviderBadges";
 import { QueryError } from "./QueryError";
 import { RoleControl } from "./RoleControl";
@@ -78,6 +79,13 @@ export function UserDetailScreen({ userId }: { userId: string }) {
               <RoleControl
                 userId={detail.id}
                 role={detail.role}
+                onChanged={user.reload}
+              />
+            </Field>
+            <Field label="Hội viên">
+              <MembershipControl
+                userId={detail.id}
+                membership={detail.membership}
                 onChanged={user.reload}
               />
             </Field>

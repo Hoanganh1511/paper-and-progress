@@ -33,6 +33,8 @@ export async function fetchArticleList(query: {
   series?: string;
   q?: string;
   cursor?: string;
+  /** How many articles to return (the server's default if left out). */
+  limit?: string;
 }): Promise<ArticleList> {
   "use cache";
   cacheLife("minutes");

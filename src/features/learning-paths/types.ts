@@ -18,7 +18,8 @@ export interface PathSummary {
   slug: string;
   title: string;
   description: string;
-  level: PathLevel;
+  /** Null when the path has no stated level; nothing is guessed. */
+  level: PathLevel | null;
   phaseCount: number;
   stepCount: number;
   /** Null unless every step states its duration. */

@@ -11,6 +11,8 @@ const tabListVariants = cva("flex", {
     variant: {
       underline: "gap-4 border-b-2 border-border-strong",
       pill: "w-fit max-w-full gap-1 overflow-x-auto rounded-pill bg-surface-sunken p-1",
+      // The ears of a folder: they sit on the top edge of the panel below, so they are not clipped.
+      folder: "items-end gap-1",
     },
   },
 });

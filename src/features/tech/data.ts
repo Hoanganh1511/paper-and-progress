@@ -1,3 +1,4 @@
+import { TECH_DESCRIPTIONS } from "./descriptions";
 import type {
   TechGroup,
   TechItem,
@@ -211,5 +212,14 @@ const TECH_GROUPS: TechGroup[] = [
  * a fetch and the page keeps working because it already awaits this.
  */
 export async function getTechGroups(): Promise<TechGroup[]> {
-  return TECH_GROUPS;
+  return TECH_GROUPS.map((group) => ({
+    ...group,
+    subcategories: group.subcategories.map((subcategory) => ({
+      ...subcategory,
+      items: subcategory.items.map((entry) => ({
+        ...entry,
+        description: TECH_DESCRIPTIONS[entry.id],
+      })),
+    })),
+  }));
 }

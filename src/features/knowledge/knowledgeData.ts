@@ -100,6 +100,11 @@ export async function fetchLearningDomains(): Promise<LearningDomain[]> {
               title: topic.name,
               description: topic.description ?? "",
               meta: countLine(topic),
+              counts: {
+                articles: topic.articleCount,
+                paths: topic.pathCount,
+                resources: topic.resourceCount,
+              },
               href: `/topics/${topic.slug}`,
             })),
           };
@@ -113,4 +118,34 @@ export async function fetchLearningDomains(): Promise<LearningDomain[]> {
       };
     }),
   );
+}
+
+/** What a topic holds, by topic slug. */
+export type TopicCounts = {
+  articles: number;
+  paths: number;
+  resources: number;
+};
+
+/**
+ * The counts of every topic in the knowledge base, by slug, for pages that list
+ * technologies of their own and want to show what the library has on each. An
+ * unreachable knowledge base gives an empty map, so such a page shows zeros
+ * instead of failing.
+ */
+export async function fetchTopicCounts(): Promise<Record<string, TopicCounts>> {
+  try {
+    const domains = await fetchLearningDomains();
+    const counts: Record<string, TopicCounts> = {};
+    for (const domain of domains) {
+      for (const category of domain.categories) {
+        for (const entry of category.items) {
+          if (entry.counts) counts[entry.id] = entry.counts;
+        }
+      }
+    }
+    return counts;
+  } catch {
+    return {};
+  }
 }

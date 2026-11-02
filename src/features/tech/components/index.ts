@@ -1,2 +1,3 @@
+export * from "./TechHero";
 export * from "./TechHub";
-export * from "./TechItemTile";
+export * from "./TechItemCard";

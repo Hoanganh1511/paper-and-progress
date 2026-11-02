@@ -54,6 +54,7 @@ export default function ArticlesPage({ searchParams }: PageProps<"/articles">) {
             description="Ghi chép về học tập, lập trình và những gì mình học được mỗi ngày."
             breadcrumbs={[
               { label: "Trang chủ", href: "/" },
+              { label: "Thư viện kiến thức", href: "/learn" },
               { label: "Bài viết" },
             ]}
             breadcrumbsProps={{ label: "Đường dẫn" }}

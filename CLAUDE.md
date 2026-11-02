@@ -99,3 +99,12 @@
 - Dùng flat config: eslint.config.mjs
 - Chạy: npx eslint . --max-warnings 0
 - KHÔNG dùng next lint (deprecated)
+
+## Backend (repo liên kết)
+
+- Backend nằm ở `C:\Users\PC\Documents\professional_projects\backend-paper-and-progress` (NestJS + Prisma + PostgreSQL, pnpm). Frontend và backend là MỘT hệ thống: làm API thì sửa cả hai bên trong cùng một phiên
+- Frontend gọi `${NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1` (xem `src/features/*/…Api.ts`). Backend `listen(8000)`; Swagger tại `/api/docs`; CORS lấy từ `CORS_ORIGINS` trong `.env` của backend (phải chứa origin của frontend)
+- Chạy backend: `pnpm start:dev`. Kiểm tra: `npx tsc --noEmit`, `pnpm test`, `pnpm lint`
+- Sau khi pull backend có thay đổi `prisma/schema.prisma`: chạy `npx prisma generate` rồi `npx prisma migrate dev`. Lỗi TS kiểu "Property 'xxx' does not exist on type 'PrismaService'" nghĩa là chưa generate
+- Đổi shape response ở backend thì cập nhật type/API client tương ứng ở `src/features/` và ngược lại
+- Mỗi repo có git riêng: commit riêng, không gộp thay đổi hai repo vào một commit

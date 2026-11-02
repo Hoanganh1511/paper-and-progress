@@ -41,4 +41,16 @@ describe("getTechGroups", () => {
       ),
     );
   });
+
+  it("gives every item a line on what it is", async () => {
+    const groups = await getTechGroups();
+    const without = groups.flatMap((group) =>
+      group.subcategories.flatMap((sub) =>
+        sub.items
+          .filter((entry) => !entry.description)
+          .map((entry) => entry.id),
+      ),
+    );
+    expect(without).toEqual([]);
+  });
 });

@@ -19,16 +19,15 @@ const sectionIdOf = (domainId: string, categoryId: string) =>
 
 /**
  * The body of one domain: the category list on the left (a row above the
- * content on small screens) and, in `<main>`, every category in turn with
- * its items in a grid.
+ * content on small screens) and every category in turn with its items in a
+ * grid. The page supplies the `<main>` and the domain's own heading.
  *
  * The category buttons and the page scroll are kept in step: choosing a
  * button scrolls smoothly to that section and moves focus to its heading;
  * scrolling the page highlights the button of the section being read. The
- * sticky offsets and the sections' `scroll-mt-*` add the heights of what is
- * stuck above them: the tab bar (2.75rem) and, when there is one, the sticky
- * app header (`--app-header-height`), so a section's heading lands just
- * below them.
+ * sticky offsets and the sections' `scroll-mt-*` add the height of the sticky
+ * app header (`--app-header-height`) when there is one, so a section's heading
+ * lands just below it.
  * Mount it with a `key` per domain so the scroll state starts fresh.
  */
 export function DomainView({ domain, className, ...props }: DomainViewProps) {
@@ -44,7 +43,7 @@ export function DomainView({ domain, className, ...props }: DomainViewProps) {
   function handleSelect(categoryId: string) {
     const section = goTo(sectionIdOf(domain.id, categoryId));
     // Move focus to the heading so keyboard and screen reader users land there too.
-    section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+    section?.querySelector<HTMLElement>("h3")?.focus({ preventScroll: true });
   }
 
   return (
@@ -60,9 +59,9 @@ export function DomainView({ domain, className, ...props }: DomainViewProps) {
         categories={domain.categories}
         activeId={activeCategoryId}
         onSelect={handleSelect}
-        className="sticky top-[calc(var(--app-header-height,0px)+2.75rem)] z-[var(--z-sticky)] -mx-4 overflow-x-auto bg-surface-page px-4 py-1 sm:-mx-6 sm:px-6 md:top-[calc(var(--app-header-height,0px)+5rem)] md:z-auto md:mx-0 md:self-start md:overflow-visible md:bg-transparent md:px-0 md:py-0"
+        className="sticky top-[var(--app-header-height,0px)] z-[var(--z-sticky)] -mx-4 overflow-x-auto bg-surface-card px-4 py-1 sm:-mx-6 sm:px-6 md:top-[calc(var(--app-header-height,0px)+5rem)] md:z-auto md:mx-0 md:self-start md:overflow-visible md:bg-transparent md:px-0 md:py-0"
       />
-      <main id="main-content" tabIndex={-1} className="min-w-0 outline-none">
+      <div className="min-w-0">
         <Stack gap={12}>
           {domain.categories.map((category, index) => {
             const sectionId = sectionIdOf(domain.id, category.id);
@@ -73,14 +72,14 @@ export function DomainView({ domain, className, ...props }: DomainViewProps) {
                 id={sectionId}
                 aria-labelledby={`${sectionId}-heading`}
                 className={cn(
-                  "scroll-mt-[calc(var(--app-header-height,0px)+7rem)] md:scroll-mt-[calc(var(--app-header-height,0px)+5rem)]",
+                  "scroll-mt-[calc(var(--app-header-height,0px)+4.5rem)] md:scroll-mt-[calc(var(--app-header-height,0px)+5rem)]",
                   isLast && "md:min-h-[60dvh]",
                 )}
               >
                 <Stack gap={4}>
                   <Stack gap={1}>
                     <Text
-                      as="h2"
+                      as="h3"
                       id={`${sectionId}-heading`}
                       tabIndex={-1}
                       size="heading-lg"
@@ -107,7 +106,7 @@ export function DomainView({ domain, className, ...props }: DomainViewProps) {
             );
           })}
         </Stack>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type TouchEvent } from "react";
 import {
   ArrowLeft,
@@ -9,7 +10,26 @@ import {
   Check,
   RotateCw,
 } from "lucide-react";
-import { Alert, Button, ProgressBar, Text, cn } from "@/design-system";
+import {
+  Alert,
+  Button,
+  FormField,
+  ProgressBar,
+  Text,
+  Textarea,
+  cn,
+} from "@/design-system";
+import { useDiaryLogs } from "@/features/english-diary";
+import {
+  ENGLISH_LOGS_HREF,
+  dailyLogId,
+  syncDailyEnglishLog,
+} from "../diarySync";
+import {
+  loadLearnProgress,
+  saveLearnProgress,
+  type Mark,
+} from "../learnProgress";
 import { SECTION_LABELS } from "../display";
 import type { LearnResponse, LearnWord, VocabSection } from "../types";
 import { Flashcard } from "./Flashcard";
@@ -19,6 +39,8 @@ const SWIPE_DISTANCE = 50;
 
 export interface LearnPhaseProps {
   lesson: LearnResponse;
+  /** Keeps cards, marks and notes in this browser, and copies the notes to English Logs on `date`. */
+  save?: { lessonId: number; date: string };
   /** Called once every card has been seen; resolves to an error message, or undefined. */
   onComplete: () => Promise<string | undefined>;
   onBack: () => void;
@@ -37,11 +59,10 @@ const PHRASE_SECTIONS: readonly VocabSection[] = [
   "PHRASAL_VERB",
 ];
 
-type Mark = "known" | "review";
-
 /** Flashcards for the day's words, one section per tab. */
 export function LearnPhase({
   lesson,
+  save,
   onComplete,
   onBack,
   savedWordIds,
@@ -50,10 +71,27 @@ export function LearnPhase({
   const cards = lesson.sections.flatMap((section) =>
     section.words.map((word) => ({ word, section: section.type })),
   );
-  const [index, setIndex] = useState(0);
+  // Read once on mount: the modal comes back where the learner left it.
+  const [restored] = useState(() =>
+    save ? loadLearnProgress(save.lessonId) : undefined,
+  );
+  const [index, setIndex] = useState(() =>
+    Math.min(restored?.index ?? 0, Math.max(cards.length - 1, 0)),
+  );
   const [isFlipped, setIsFlipped] = useState(false);
-  const [visited, setVisited] = useState<ReadonlySet<number>>(new Set([0]));
-  const [marks, setMarks] = useState<Record<number, Mark>>({});
+  const [visited, setVisited] = useState<ReadonlySet<number>>(
+    () => new Set(restored?.visited ?? [0]),
+  );
+  const [marks, setMarks] = useState<Record<number, Mark>>(
+    restored?.marks ?? {},
+  );
+  const [notes, setNotes] = useState<Record<number, string>>(
+    restored?.notes ?? {},
+  );
+  const logs = useDiaryLogs();
+  const existingLog = save
+    ? logs.find((log) => log.id === dailyLogId(save.date))
+    : undefined;
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [touchStart, setTouchStart] = useState<number>();
@@ -61,6 +99,24 @@ export function LearnPhase({
   const [isSaveFormOpen, setIsSaveFormOpen] = useState(false);
 
   const current = cards[index];
+
+  const lessonId = save?.lessonId;
+  const date = save?.date;
+  useEffect(() => {
+    if (lessonId === undefined || date === undefined) return;
+    const progress = { index, visited: [...visited], marks, notes };
+    saveLearnProgress(lessonId, progress);
+    // English Logs gets the notes as they are written, not only at the end.
+    syncDailyEnglishLog({
+      date,
+      lesson,
+      progress,
+      isCompleted: false,
+      existing: existingLog,
+    });
+    // existingLog is read, not watched: saving the log must not save it again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, date, index, visited, marks, notes]);
   const hasSeenAll = visited.size === cards.length;
 
   function go(next: number) {
@@ -112,6 +168,15 @@ export function LearnPhase({
     setIsSaving(true);
     setError(undefined);
     const message = await onComplete();
+    if (!message && save) {
+      syncDailyEnglishLog({
+        date: save.date,
+        lesson,
+        progress: { index, visited: [...visited], marks, notes },
+        isCompleted: true,
+        existing: existingLog,
+      });
+    }
     if (message) {
       setError(message);
       setIsSaving(false);
@@ -204,6 +269,33 @@ export function LearnPhase({
           Cần ôn lại
         </Button>
       </div>
+
+      {save && (
+        <FormField
+          label="Ghi chú cho từ này"
+          description="Tự lưu, và được chép sang English Logs."
+        >
+          <Textarea
+            key={current.word.id}
+            rows={2}
+            value={notes[current.word.id] ?? ""}
+            placeholder="Cách nhớ, ví dụ của riêng bạn…"
+            onChange={(event) => {
+              const value = event.target.value;
+              const id = current.word.id;
+              setNotes((previous) => ({ ...previous, [id]: value }));
+            }}
+          />
+        </FormField>
+      )}
+      {save && existingLog && (
+        <Link
+          href={ENGLISH_LOGS_HREF}
+          className="self-center text-body-sm font-semibold text-text-primary underline underline-offset-4"
+        >
+          Xem trong English Logs
+        </Link>
+      )}
 
       {canSave && (
         <div className="flex flex-col items-center gap-3">

@@ -60,7 +60,7 @@ export function PathOverview({ initial }: { initial: PathDetail }) {
     };
   }, [initial.slug, isAuthenticated, isLoading]);
 
-  const level = LEVEL_LABEL[path.level];
+  const level = path.level ? LEVEL_LABEL[path.level] : null;
   const progress = path.progress;
   const firstStep = path.phases[0]?.steps[0];
   const nextSlug = progress?.nextStepSlug ?? firstStep?.slug;
@@ -87,9 +87,11 @@ export function PathOverview({ initial }: { initial: PathDetail }) {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={level.variant} size="sm">
-            {level.label}
-          </Badge>
+          {level && (
+            <Badge variant={level.variant} size="sm">
+              {level.label}
+            </Badge>
+          )}
           {path.totalMinutes !== null && (
             <Text as="span" size="caption" color="muted">
               {formatMinutes(path.totalMinutes)}

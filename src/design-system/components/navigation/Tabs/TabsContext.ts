@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-export type TabsVariant = "underline" | "pill";
+export type TabsVariant = "underline" | "pill" | "folder";
 
 export interface TabsContextValue {
   /** Selected tab value, or undefined when nothing is selected yet. */

@@ -93,7 +93,7 @@ export function LearningCalendarSection() {
             weight="bold"
             className="font-display"
           >
-            Mục tiêu học tiếng Anh
+            Nhật ký học Tiếng Anh
           </Text>
         </div>
         {calendar.data && (

@@ -15,6 +15,8 @@ export interface LearningItem {
   lessons?: number;
   /** A short line under the description, e.g. "3 bài viết · 1 lộ trình". */
   meta?: string;
+  /** What a topic holds, as numbers. */
+  counts?: { articles: number; paths: number; resources: number };
   /** When set, the whole card links here. */
   href?: string;
 }

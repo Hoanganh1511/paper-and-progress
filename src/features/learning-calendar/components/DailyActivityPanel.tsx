@@ -8,10 +8,12 @@ import {
   Dumbbell,
   Mic,
   Minus,
+  NotebookPen,
   Pencil,
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
+import { useDiaryLogs } from "@/features/english-diary";
 import {
   Alert,
   Badge,
@@ -36,6 +38,7 @@ const ICONS: Record<ActivityType, LucideIcon> = {
 
 /** Where "start learning" goes: the learning area. It records nothing by itself. */
 const START_LEARNING_HREF = "/learn";
+const DIARY_LOGS_HREF = "/goals/english/diary";
 
 function ActivityItem({ activity }: { activity: DayActivity }) {
   const Icon = ICONS[activity.type];
@@ -80,6 +83,58 @@ function ActivityItem({ activity }: { activity: DayActivity }) {
         <div className={base}>{body}</div>
       )}
     </li>
+  );
+}
+
+/** English Logs written on the day, with a way into them. */
+function DayLogs({ date }: { date: string }) {
+  const logs = useDiaryLogs().filter(
+    (log) => log.date === date && !log.isArchived,
+  );
+  if (logs.length === 0) return null;
+  return (
+    <section aria-labelledby="day-logs-title" className="flex flex-col gap-2">
+      <Text
+        as="h3"
+        id="day-logs-title"
+        size="body-lg"
+        weight="bold"
+        className="flex items-center gap-2 font-display"
+      >
+        <NotebookPen aria-hidden="true" size={20} />
+        Ghi chép trong ngày
+      </Text>
+      <ul className="flex flex-col gap-1.5">
+        {logs.map((log) => (
+          <li key={log.id}>
+            <Link
+              href={DIARY_LOGS_HREF}
+              className="flex items-center gap-3 rounded-standard border-2 border-border-strong bg-surface-card px-3 py-1.5 hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus"
+            >
+              <Text
+                as="span"
+                weight="bold"
+                className="min-w-0 flex-1 break-words"
+              >
+                {log.title}
+              </Text>
+              <Badge
+                size="sm"
+                variant={log.status === "completed" ? "lime" : "yellow"}
+              >
+                {log.status === "completed" ? "Hoàn thành" : "Nháp"}
+              </Badge>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={DIARY_LOGS_HREF}
+        className="self-start text-body-sm font-semibold text-text-primary underline underline-offset-4"
+      >
+        Mở English Logs
+      </Link>
+    </section>
   );
 }
 
@@ -248,6 +303,7 @@ export function DailyActivityPanel({
           </section>
         </>
       )}
+      {data && <DayLogs date={date} />}
     </div>
   );
 }

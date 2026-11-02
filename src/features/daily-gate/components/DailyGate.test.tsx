@@ -205,6 +205,7 @@ const passedResult = {
 };
 
 beforeEach(() => {
+  localStorage.clear();
   vi.clearAllMocks();
   api.listPhrases.mockResolvedValue([]);
   api.getToday.mockResolvedValue(today());

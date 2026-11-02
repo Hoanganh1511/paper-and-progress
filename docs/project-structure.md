@@ -46,14 +46,16 @@ Route group `(application)` dùng chung app shell, `(auth)` dùng layout auth ri
 src/app/
 ├── layout.tsx · globals.css (design tokens @theme) · globals.test.ts · favicon.ico
 ├── (application)/
-│   ├── (home)/                       # /
+│   ├── (sidebar)/                    # layout chung có sidebar (giữ nguyên khi chuyển giữa các trang trong nhóm)
+│   │   ├── page.tsx                  # /
+│   │   ├── learn/                    # /learn
+│   │   ├── paths/                    # /paths (danh sách lộ trình; chi tiết /paths/[slug] nằm ở (marketing))
+│   │   └── goals/english/            # /goals/english, /goals/english/diary
 │   ├── bookmarks/                    # /bookmarks
 │   ├── devlog/                       # /devlog (+ feed.xml/route.ts: RSS)
-│   ├── learn/                        # /learn
 │   ├── profile/                      # /profile (xem hồ sơ: Tổng quan, Chuyên môn, Hoạt động, Nội dung)
 │   ├── settings/                     # /settings (chỉnh sửa: hồ sơ, bảo mật, tùy chọn, liên kết, thanh toán)
 │   └── goals/
-│       ├── english/                  # /goals/english
 │       └── tech/                     # /goals/tech
 │           └── backend-tutor/        # /goals/tech/backend-tutor
 └── (auth)/

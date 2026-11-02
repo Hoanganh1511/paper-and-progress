@@ -60,15 +60,15 @@ describe("AppHeader", () => {
       pathname.current = "/";
     });
 
-    it("has a dictionary search that works without JavaScript (a GET form)", () => {
+    it("has a search that works without JavaScript (a GET form)", () => {
       setup();
       const search = screen.getByRole("search");
       expect(search.tagName).toBe("FORM");
-      expect(search).toHaveAttribute("action", "/dictionary");
+      expect(search).toHaveAttribute("action", "/search");
       expect(search).toHaveAttribute("method", "get");
-      const box = within(search).getByRole("searchbox", { name: "Từ điển" });
+      const box = within(search).getByRole("searchbox", { name: "Tìm kiếm" });
       expect(box).toHaveAttribute("name", "q");
-      expect(box).toHaveAttribute("placeholder", "Từ điển");
+      expect(box).toHaveAttribute("placeholder", "Tìm kiếm");
       expect(search.querySelector("svg")).toHaveAttribute(
         "aria-hidden",
         "true",
@@ -276,7 +276,7 @@ describe("AppHeader", () => {
         within(menu)
           .getAllByRole("menuitem")
           .map((item) => item.textContent),
-      ).toEqual(["Thông tin cá nhân", "Bookmarks", "Cài đặt", "Đăng xuất"]);
+      ).toEqual(["Hồ sơ cá nhân", "Bookmarks", "Cài đặt", "Đăng xuất"]);
     });
 
     it("leaves the info section out without a user", async () => {
@@ -295,11 +295,61 @@ describe("AppHeader", () => {
       expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     });
 
+    it("has a membership entry when it is given a page", async () => {
+      setup({ user, membershipHref: "/membership" });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(screen.getByRole("menuitem", { name: "Hội viên" }));
+      expect(push).toHaveBeenCalledWith("/membership");
+    });
+
+    it("has an order history entry when it is given a page", async () => {
+      setup({ user, orderHistoryHref: "/membership/orders" });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Lịch sử giao dịch" }),
+      );
+      expect(push).toHaveBeenCalledWith("/membership/orders");
+    });
+
+    it("puts a small crown on the avatar of a member, and names it for assistive technology", () => {
+      setup({ user, isMember: true, profileBadge: 0 });
+      expect(screen.getByTestId("member-crown")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Hồ sơ, hội viên" }),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps the new-items badge and the member name together", () => {
+      setup({ user, isMember: true, profileBadge: 2 });
+      expect(
+        screen.getByRole("button", { name: "Hồ sơ, 2 mục mới, hội viên" }),
+      ).toBeInTheDocument();
+    });
+
+    it("has no crown for someone who is not a member", () => {
+      setup({ user });
+      expect(screen.queryByTestId("member-crown")).not.toBeInTheDocument();
+    });
+
+    it("shows the crown on the avatar inside the menu too", async () => {
+      setup({ user, isMember: true });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(screen.getAllByTestId("member-crown")).toHaveLength(2);
+    });
+
+    it("has no membership entry without a page", async () => {
+      setup({ user });
+      await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
+      expect(
+        screen.queryByRole("menuitem", { name: "Hội viên" }),
+      ).not.toBeInTheDocument();
+    });
+
     it("can lead to other pages", async () => {
       setup({ profileHref: "/me", settingsHref: "/prefs" });
       await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
       await userEvent.click(
-        screen.getByRole("menuitem", { name: "Thông tin cá nhân" }),
+        screen.getByRole("menuitem", { name: "Hồ sơ cá nhân" }),
       );
       expect(push).toHaveBeenLastCalledWith("/me");
       await userEvent.click(screen.getByRole("button", { name: /Hồ sơ/ }));
@@ -325,7 +375,7 @@ describe("AppHeader", () => {
       const trigger = screen.getByRole("button", { name: /Hồ sơ/ });
       await userEvent.click(trigger);
       expect(
-        screen.getByRole("menuitem", { name: "Thông tin cá nhân" }),
+        screen.getByRole("menuitem", { name: "Hồ sơ cá nhân" }),
       ).toHaveFocus();
       await userEvent.keyboard("{ArrowDown}");
       expect(screen.getByRole("menuitem", { name: "Bookmarks" })).toHaveFocus();
@@ -495,7 +545,7 @@ describe("AppHeader", () => {
     setup({
       labels: {
         brand: "Báo Lingo",
-        dictionary: "Tra từ",
+        search: "Tra cứu",
         darkMode: "Giao diện tối",
         profile: "Tài khoản",
       },
@@ -503,7 +553,7 @@ describe("AppHeader", () => {
     });
     expect(screen.getByRole("link", { name: "Báo Lingo" })).toBeInTheDocument();
     expect(
-      screen.getByRole("searchbox", { name: "Tra từ" }),
+      screen.getByRole("searchbox", { name: "Tra cứu" }),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Tài khoản" }));
     expect(
@@ -566,7 +616,7 @@ describe("AppHeader", () => {
     setup({ unreadNotifications: 1, projectStatusHref: "/dashboard" });
     const order = [
       /^Baolingo$/,
-      /^Từ điển$/,
+      /^Tìm kiếm$/,
       /^Project Status$/,
       /^Thông báo, có tin chưa đọc$/,
       /^Hồ sơ, 1 mục mới$/,

@@ -16,7 +16,7 @@ import {
   cn,
 } from "@/design-system";
 import { listAdminUsers } from "../adminApi";
-import { PAGE_SIZE, formatDateTime } from "../format";
+import { PAGE_SIZE, formatDate, formatDateTime } from "../format";
 import { TableMessage } from "./TableMessage";
 import { TwoFactorStatus } from "./TwoFactorStatus";
 import { useAdminQuery, useDebouncedValue } from "../useAdminQuery";
@@ -64,6 +64,7 @@ export function UsersScreen() {
             <TableHead>Role</TableHead>
             <TableHead>Provider</TableHead>
             <TableHead>2FA</TableHead>
+            <TableHead>Hội viên</TableHead>
             <TableHead>Ngày tạo</TableHead>
             <TableHead>Đăng nhập gần nhất</TableHead>
           </TableRow>
@@ -97,6 +98,27 @@ export function UsersScreen() {
                 <TwoFactorStatus isEnabled={user.totpEnabled} />
               </TableCell>
               <TableCell className="whitespace-nowrap">
+                {user.isMember && user.membershipExpiresAt ? (
+                  <>
+                    <Badge variant="success" size="sm">
+                      Hội viên
+                    </Badge>{" "}
+                    <Text as="span" size="body-sm" color="secondary">
+                      đến {formatDate(user.membershipExpiresAt)}
+                    </Text>
+                  </>
+                ) : user.membershipExpiresAt ? (
+                  <>
+                    <Badge size="sm">Hết hạn</Badge>{" "}
+                    <Text as="span" size="body-sm" color="secondary">
+                      {formatDate(user.membershipExpiresAt)}
+                    </Text>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
                 {formatDateTime(user.createdAt)}
               </TableCell>
               <TableCell className="whitespace-nowrap">
@@ -105,9 +127,9 @@ export function UsersScreen() {
             </TableRow>
           ))}
           {items?.length === 0 && (
-            <TableMessage colSpan={6}>Không tìm thấy user nào.</TableMessage>
+            <TableMessage colSpan={7}>Không tìm thấy user nào.</TableMessage>
           )}
-          {!items && <TableMessage colSpan={6}>Đang tải...</TableMessage>}
+          {!items && <TableMessage colSpan={7}>Đang tải...</TableMessage>}
         </TableBody>
       </Table>
       <TablePager

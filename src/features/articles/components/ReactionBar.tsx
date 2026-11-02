@@ -12,7 +12,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Button, Text, cn } from "@/design-system";
+import { Text, cn } from "@/design-system";
+import { PandaPeek } from "@/features/decor";
 import { REACTION_LABELS, type Engagement, type ReactionType } from "../types";
 
 const ICONS: Record<ReactionType, LucideIcon> = {
@@ -37,10 +38,15 @@ export interface ReactionBarProps {
   onToggleBookmark: () => void;
 }
 
-const pill =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill border-2 border-border-strong px-3 text-body-sm font-medium transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus";
+const control =
+  "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 border-2 border-border-strong px-3.5 text-body-sm font-semibold shadow-[2px_2px_0_0_var(--color-border-strong)] transition-[background-color,translate,box-shadow] duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus";
 
-/** Reactions, bookmark and share. A reaction on, bookmark saved: shown as pressed (`aria-pressed`), not by colour alone. */
+/**
+ * Reactions, bookmark and share, in one bar: white, with a black border and a
+ * lime edge along the left and the bottom, and a panda looking over a hill at
+ * the right. The reaction that is on is pink and filled, the bookmark that is
+ * saved is yellow; both are also `aria-pressed`, so it is not by colour alone.
+ */
 export function ReactionBar({
   engagement,
   title,
@@ -69,7 +75,7 @@ export function ReactionBar({
     <div
       role="group"
       aria-label="Phản hồi bài viết"
-      className="flex flex-wrap items-center gap-2"
+      className="relative flex flex-wrap items-center gap-x-3 gap-y-3 rounded-[1.25rem] border-2 border-border-strong bg-surface-card p-4 shadow-[-6px_7px_0_0_var(--color-accent-lime)] md:pr-64"
     >
       {TYPES.map((type) => {
         const Icon = ICONS[type];
@@ -85,10 +91,11 @@ export function ReactionBar({
               if (type === "CELEBRATE" && !isOn) void celebrate();
             }}
             className={cn(
-              pill,
+              control,
+              "rounded-pill",
               isOn
-                ? "bg-accent-lime text-ink"
-                : "bg-surface-card hover:bg-surface-sunken",
+                ? "bg-accent-pink text-ink"
+                : "bg-surface-card text-text-primary hover:bg-surface-sunken",
             )}
           >
             <Icon aria-hidden="true" size={18} />
@@ -96,16 +103,21 @@ export function ReactionBar({
           </button>
         );
       })}
-      <span aria-hidden="true" className="mx-1 h-6 w-px bg-border-subtle" />
+      <span
+        aria-hidden="true"
+        data-divider=""
+        className="mx-1 hidden h-9 w-0.5 bg-border-strong sm:block"
+      />
       <button
         type="button"
         aria-pressed={engagement.isBookmarked}
         onClick={onToggleBookmark}
         className={cn(
-          pill,
+          control,
+          "rounded-standard",
           engagement.isBookmarked
             ? "bg-accent-yellow text-ink"
-            : "bg-surface-card hover:bg-surface-sunken",
+            : "bg-surface-card text-text-primary hover:bg-surface-sunken",
         )}
       >
         {engagement.isBookmarked ? (
@@ -115,13 +127,22 @@ export function ReactionBar({
         )}
         {engagement.isBookmarked ? "Đã lưu" : "Lưu bài"}
       </button>
-      <Button
-        variant="outline"
-        leftIcon={copied ? Check : Share2}
+      <button
+        type="button"
         onClick={share}
+        className={cn(
+          control,
+          "rounded-standard bg-surface-card text-text-primary hover:bg-surface-sunken",
+        )}
       >
+        {copied ? (
+          <Check aria-hidden="true" size={18} />
+        ) : (
+          <Share2 aria-hidden="true" size={18} />
+        )}
         {copied ? "Đã sao chép liên kết" : "Chia sẻ"}
-      </Button>
+      </button>
+      <PandaPeek className="pointer-events-none absolute right-4 -bottom-0.5 hidden h-24 w-auto md:block" />
       <Text as="span" size="body-sm" role="status" className="sr-only">
         {copied ? "Đã sao chép liên kết" : ""}
       </Text>

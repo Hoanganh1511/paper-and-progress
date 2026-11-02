@@ -50,14 +50,18 @@ export interface FullArticle extends ArticleMeta {
   contentHtml: string;
 }
 
-/** The start of an article, for a guest on a `PREVIEW` article. */
+/** Who is turned away, and so which prompt they get: sign in, or become a member. */
+export type GateReason = "LOGIN" | "MEMBERSHIP";
+
+/** The start of an article, for anyone who is not a member on a `PREVIEW` article. */
 export interface PreviewArticle extends ArticleMeta {
   gated: true;
   fullAvailable: true;
+  reason: GateReason;
   previewHtml: string;
 }
 
-/** What a guest gets for a members-only article: enough for a card, nothing of the text. */
+/** What a non-member gets for a members-only article: enough for a card, nothing of the text. */
 export interface LockedArticle {
   title: string;
   excerpt: string | null;
@@ -158,7 +162,7 @@ export type ArticleStatsSort =
 export const VISIBILITY_LABELS: Record<ArticleVisibility, string> = {
   PUBLIC: "Công khai",
   PREVIEW: "Xem trước 30%",
-  MEMBERS_ONLY: "Chỉ thành viên",
+  MEMBERS_ONLY: "Chỉ hội viên",
 };
 
 export const STATUS_LABELS: Record<ArticleStatus, string> = {

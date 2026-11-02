@@ -14,7 +14,7 @@ import {
   cn,
 } from "@/design-system";
 import { loginHref, useAuth } from "@/features/auth";
-import { getFullArticle } from "../articlesApi";
+import { ArticlesApiError, getFullArticle } from "../articlesApi";
 import { authorName, formatDate } from "../format";
 import { extractToc } from "../toc";
 import type {
@@ -85,21 +85,31 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const pathname = usePathname();
   const initialFull = result.kind === "full" ? result.article : undefined;
-  const [fetched, setFetched] = useState<FullArticle>();
+  const [fetched, setFetched] = useState<FullArticle | PreviewArticle>();
+  // The server said no: signed in, but not a member.
+  const [isNotMember, setIsNotMember] = useState(false);
   const [loadError, setLoadError] = useState<string>();
-  const full = initialFull ?? fetched;
+  const full = initialFull ?? (fetched && !fetched.gated ? fetched : undefined);
 
   useEffect(() => {
     if (initialFull || isLoading || !isAuthenticated) return;
     let isCurrent = true;
     getFullArticle(slug)
-      .then((article) => isCurrent && setFetched(article))
+      .then((article) => {
+        if (!isCurrent) return;
+        setFetched(article);
+        if (article.gated) setIsNotMember(true);
+      })
       .catch((error: unknown) => {
-        if (isCurrent) {
-          setLoadError(
-            error instanceof Error ? error.message : "Không tải được bài viết.",
-          );
+        if (!isCurrent) return;
+        // A members-only article is a 403 for someone who is not a member.
+        if (error instanceof ArticlesApiError && error.status === 403) {
+          setIsNotMember(true);
+          return;
         }
+        setLoadError(
+          error instanceof Error ? error.message : "Không tải được bài viết.",
+        );
       });
     return () => {
       isCurrent = false;
@@ -107,7 +117,16 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
   }, [slug, initialFull, isAuthenticated, isLoading]);
 
   const preview: PreviewArticle | undefined =
-    result.kind === "preview" ? result.article : undefined;
+    result.kind === "preview"
+      ? result.article
+      : fetched?.gated
+        ? fetched
+        : undefined;
+  const gateReason = !isAuthenticated
+    ? ("LOGIN" as const)
+    : isNotMember
+      ? ("MEMBERSHIP" as const)
+      : ("CHECKING" as const);
   const meta = full ?? preview;
   const articleId = meta?.id;
   const toc = useMemo(() => (full ? extractToc(full.contentHtml) : []), [full]);
@@ -135,6 +154,7 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
           linkComponent={Link}
           items={[
             { label: "Trang chủ", href: "/" },
+            { label: "Thư viện kiến thức", href: "/learn" },
             { label: "Bài viết", href: "/articles" },
             { label: title },
           ]}
@@ -208,7 +228,7 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
 
       {loadError && <Alert variant="danger">{loadError}</Alert>}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="flex min-w-0 flex-col gap-8">
           <div className="lg:hidden">
             <TableOfContents items={toc} />
@@ -218,6 +238,9 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
           ) : (
             <GatedOverlay
               signInHref={loginHref(pathname)}
+              reason={
+                loadError ? "UNKNOWN" : isLoading ? "CHECKING" : gateReason
+              }
               previewHtml={preview?.previewHtml}
               excerpt={result.kind === "locked" ? result.article.excerpt : null}
             />
@@ -240,7 +263,7 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-[calc(var(--app-header-height,4rem)+1.5rem)]">
+          <div className="sticky top-[calc(var(--app-header-height,4rem)+1.5rem)] max-h-[calc(100dvh-var(--app-header-height,4rem)-3rem)] overflow-y-auto pr-2 pb-2">
             <TableOfContents items={toc} />
           </div>
         </aside>

@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import type { LearningDomain } from "../../types";
@@ -54,12 +54,110 @@ const domains: LearningDomain[] = [
   },
 ];
 
-const tab = (name: string) => screen.getByRole("tab", { name });
+describe("LearningHub: with articles, two folder tabs", () => {
+  const articles = (
+    <section aria-label="Danh sách bài">Bài viết nổi bật</section>
+  );
 
-describe("LearningHub", () => {
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("has the tabs Bài viết and Techstack, and starts on Bài viết", () => {
+    render(<LearningHub domains={domains} articles={articles} />);
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Bài viết",
+      "Techstack",
+    ]);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("region", { name: "Danh sách bài" })).toBeVisible();
+    // The domains are on the page already, only hidden.
+    const [, techstack] = screen.getAllByRole("tabpanel", { hidden: true });
+    expect(techstack).toHaveAttribute("hidden");
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Công nghệ" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("is a folder: the tabs and the panel share one tablist and panel", () => {
+    render(<LearningHub domains={domains} articles={articles} />);
+    expect(
+      screen.getByRole("tablist", { name: "Nội dung của thư viện" }),
+    ).toBeInTheDocument();
+    // The open tab is lime; the lime band along the top of the panel is what it runs into.
+    expect(screen.getByRole("tab", { name: "Bài viết" })).toHaveClass(
+      "aria-selected:bg-accent-lime",
+    );
+    expect(
+      document.querySelector(".bg-accent-lime[aria-hidden='true']"),
+    ).not.toBeNull();
+  });
+
+  it("shows every domain under Techstack, and hides the articles", async () => {
+    render(<LearningHub domains={domains} articles={articles} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Techstack" }));
+    expect(
+      screen
+        .getAllByRole("heading", { level: 2 })
+        .map((h) => h.textContent)
+        .filter((text) =>
+          ["Công nghệ", "Tài chính", "Sức khỏe"].includes(text ?? ""),
+        ),
+    ).toEqual(["Công nghệ", "Tài chính", "Sức khỏe"]);
+    expect(
+      screen.queryByRole("region", { name: "Danh sách bài" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the tab in the address, without loading another page", async () => {
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(<LearningHub domains={domains} articles={articles} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Techstack" }));
+    expect(window.location.search).toBe("?tab=techstack");
+    await userEvent.click(screen.getByRole("tab", { name: "Bài viết" }));
+    expect(window.location.search).toBe("");
+    expect(replace).toHaveBeenCalledTimes(2);
+  });
+
+  it("can open on Techstack", () => {
+    render(
+      <LearningHub
+        domains={domains}
+        articles={articles}
+        defaultTab="techstack"
+      />,
+    );
+    expect(screen.getByRole("tab", { name: "Techstack" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Công nghệ" }),
+    ).toBeInTheDocument();
+  });
+
+  it("moves between the tabs with the arrow keys", async () => {
+    render(<LearningHub domains={domains} articles={articles} />);
+    screen.getByRole("tab", { name: "Bài viết" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Techstack" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(
+      <LearningHub domains={domains} articles={articles} />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe("LearningHub: domains on their own", () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
-    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     // jsdom has no layout: put every section below the reading line, as at the top of a page.
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
       top: 1000,
@@ -68,137 +166,66 @@ describe("LearningHub", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     Reflect.deleteProperty(Element.prototype, "scrollIntoView");
-    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
   });
 
-  it("renders a horizontal tab bar with one tab per domain and the first selected", () => {
+  it("has no tabs: every domain is a section on the same page", () => {
     render(<LearningHub domains={domains} />);
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("tablist", { name: "Lĩnh vực học tập" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
-      "Công nghệ",
-      "Tài chính",
-      "Sức khỏe",
-    ]);
-    expect(tab("Công nghệ")).toHaveAttribute("aria-selected", "true");
-    expect(tab("Tài chính")).toHaveAttribute("aria-selected", "false");
+      screen
+        .getAllByRole("heading", { level: 2 })
+        .map((h) => h.textContent)
+        .filter((text) =>
+          ["Công nghệ", "Tài chính", "Sức khỏe"].includes(text ?? ""),
+        ),
+    ).toEqual(["Công nghệ", "Tài chính", "Sức khỏe"]);
   });
 
-  it("hides the tab icons from assistive technology and names the page with an h1", () => {
+  it("hides the domain icons from assistive technology", () => {
     render(<LearningHub domains={domains} />);
-    screen
-      .getAllByRole("tab")
-      .forEach((t) =>
-        expect(t.querySelector("svg")).toHaveAttribute("aria-hidden", "true"),
-      );
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Học tập theo lĩnh vực" }),
-    ).toBeInTheDocument();
+    const icons = document.querySelectorAll("h2 svg, section > div svg");
+    for (const icon of icons) {
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(
+      domains.length,
+    );
   });
 
-  it("shows the sidebar and sections of the selected domain only", () => {
+  it("shows the first category of every domain, with its topics, and the other categories as buttons", () => {
     render(<LearningHub domains={domains} />);
-    const nav = screen.getByRole("navigation", {
-      name: "Phân loại trong lĩnh vực Công nghệ",
-    });
-    expect(within(nav).getAllByRole("button")).toHaveLength(2);
+    for (const name of ["Lập trình", "Đầu tư", "Giấc ngủ"]) {
+      expect(
+        screen.getByRole("heading", { level: 3, name }),
+      ).toBeInTheDocument();
+    }
     expect(
-      screen.getByRole("heading", { level: 2, name: "Lập trình" }),
+      screen.getByRole("heading", { level: 4, name: "JavaScript" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "JavaScript" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Đầu tư" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("main")).toHaveLength(1);
-  });
-
-  it("swaps the whole content when another tab is chosen, and goes back to the top", async () => {
-    Object.defineProperty(window, "scrollY", {
-      configurable: true,
-      value: 600,
-    });
-    render(<LearningHub domains={domains} />);
-    await userEvent.click(tab("Tài chính"));
-
-    expect(tab("Tài chính")).toHaveAttribute("aria-selected", "true");
     expect(
       screen.getByRole("navigation", {
         name: "Phân loại trong lĩnh vực Tài chính",
       }),
     ).toBeInTheDocument();
+    // Only the chosen category's topics are shown.
     expect(
-      within(screen.getByRole("main"))
-        .getAllByRole("heading", { level: 2 })
-        .map((h) => h.textContent),
-    ).toEqual(["Đầu tư", "Thuế", "Ngân sách"]);
-    expect(
-      screen.queryByRole("heading", { name: "Lập trình" }),
+      screen.queryByRole("heading", { level: 4, name: "Git" }),
     ).not.toBeInTheDocument();
-    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
   });
 
-  it("does not scroll when it is already at the top", async () => {
-    render(<LearningHub domains={domains} />);
-    await userEvent.click(tab("Sức khỏe"));
-    expect(window.scrollTo).not.toHaveBeenCalled();
-  });
-
-  it("starts the new domain on its first category", async () => {
+  it("swaps the topics in place when another category is chosen", async () => {
     render(<LearningHub domains={domains} />);
     await userEvent.click(screen.getByRole("button", { name: "DevOps" }));
+    expect(
+      screen.getByRole("heading", { level: 4, name: "Git" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { level: 4, name: "JavaScript" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "DevOps" })).toHaveAttribute(
       "aria-current",
-      "location",
+      "true",
     );
-
-    await userEvent.click(tab("Tài chính"));
-    expect(screen.getByRole("button", { name: "Đầu tư" })).toHaveAttribute(
-      "aria-current",
-      "location",
-    );
-  });
-
-  it("scrolls to a category from the sidebar of whichever domain is open", async () => {
-    render(<LearningHub domains={domains} />);
-    await userEvent.click(tab("Tài chính"));
-    await userEvent.click(screen.getByRole("button", { name: "Ngân sách" }));
-    const section = document.getElementById("finance-budget") as HTMLElement;
-    expect(section.scrollIntoView).toHaveBeenCalledWith({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
-
-  it("switches tabs with the arrow keys", async () => {
-    render(<LearningHub domains={domains} />);
-    await userEvent.tab();
-    expect(tab("Công nghệ")).toHaveFocus();
-    await userEvent.keyboard("{ArrowRight}");
-    expect(tab("Tài chính")).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("heading", { name: "Đầu tư" })).toBeInTheDocument();
-  });
-
-  it("opens on the requested domain", () => {
-    render(<LearningHub domains={domains} defaultDomainId="health" />);
-    expect(tab("Sức khỏe")).toHaveAttribute("aria-selected", "true");
-    expect(
-      screen.getByRole("heading", { name: "Giấc ngủ" }),
-    ).toBeInTheDocument();
-  });
-
-  it("sticks the tab bar just beneath a sticky app header", () => {
-    render(<LearningHub domains={domains} />);
-    expect(screen.getByRole("tablist").closest(".sticky")).toHaveClass(
-      "top-[var(--app-header-height,0px)]",
-    );
-  });
-
-  it("has a main region that a skip link can target", () => {
-    render(<LearningHub domains={domains} />);
-    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
   });
 
   it("declares its Vietnamese content with lang=vi", () => {
@@ -208,7 +235,7 @@ describe("LearningHub", () => {
 
   it("copes with an empty catalogue", () => {
     render(<LearningHub domains={[]} />);
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(document.querySelectorAll("h2")).toHaveLength(0);
   });
 
   it("merges className", () => {
@@ -222,8 +249,6 @@ describe("LearningHub", () => {
     const { container } = render(<LearningHub domains={domains} />);
     // axe measures real geometry; drop the fake layout first.
     vi.restoreAllMocks();
-    expect(await axe(container)).toHaveNoViolations();
-    await userEvent.click(tab("Tài chính"));
     expect(await axe(container)).toHaveNoViolations();
   });
 });

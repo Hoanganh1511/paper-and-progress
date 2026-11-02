@@ -35,13 +35,23 @@ export interface AdminUser {
   isActive: boolean;
   createdAt: string;
   totpEnabled: boolean;
+  /** True while the membership end date is still ahead. */
+  isMember: boolean;
+  membershipExpiresAt: string | null;
   /** `local` for a password account, plus each linked social provider. */
   providers: string[];
   lastLoginAt: string | null;
 }
 
+export interface AdminMembership {
+  expiresAt: string;
+  source: "ADMIN" | "PAYMENT";
+}
+
 export interface AdminUserDetail extends Omit<AdminUser, "lastLoginAt"> {
   avatarUrl: string | null;
+  /** Null when the user never was a member; may be in the past. */
+  membership: AdminMembership | null;
   updatedAt: string;
   totpEnabledAt: string | null;
 }
@@ -151,4 +161,57 @@ export const setAdminUserRole = (id: string, role: AdminUser["role"]) =>
       `/admin/users/${id}/role`,
       { role },
     ),
+  );
+
+/** Sets when the user's membership ends (it has to be in the future). */
+export const grantAdminUserMembership = (id: string, expiresAt: string) =>
+  call(
+    authedApi.put<{ isMember: boolean; expiresAt: string | null }>(
+      `/admin/users/${id}/membership`,
+      { expiresAt },
+    ),
+  );
+
+export const revokeAdminUserMembership = (id: string) =>
+  call(
+    authedApi.delete<{ isMember: boolean; expiresAt: string | null }>(
+      `/admin/users/${id}/membership`,
+    ),
+  );
+
+export type MembershipOrderStatus = "PENDING" | "PAID" | "CANCELLED";
+
+export interface AdminMembershipOrder {
+  id: string;
+  plan: "MONTH" | "YEAR";
+  /** In VND. */
+  amount: number;
+  /** The note the buyer put on the bank transfer. */
+  code: string;
+  status: MembershipOrderStatus;
+  createdAt: string;
+  paidAt: string | null;
+  /** What the bank reported, when the order was confirmed automatically. */
+  receivedAmount: number | null;
+  user: { id: string; email: string; displayName: string | null };
+}
+
+export const listAdminMembershipOrders = (status: MembershipOrderStatus) =>
+  call(
+    authedApi.get<AdminMembershipOrder[]>("/admin/membership-orders", {
+      params: { status },
+    }),
+  );
+
+/** The money has arrived: marks the order paid and grants the membership. */
+export const confirmAdminMembershipOrder = (id: string) =>
+  call(
+    authedApi.post<{ ok: boolean; alreadyPaid: boolean }>(
+      `/admin/membership-orders/${id}/confirm`,
+    ),
+  );
+
+export const cancelAdminMembershipOrder = (id: string) =>
+  call(
+    authedApi.post<{ ok: boolean }>(`/admin/membership-orders/${id}/cancel`),
   );

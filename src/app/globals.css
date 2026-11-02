@@ -508,3 +508,34 @@ body {
 .rich-text .hljs-function {
   color: var(--color-danger-text);
 }
+
+/* Changing page: the old content fades out, the new content fades in and rises
+   a little (see PageTransition). Clicks pass through while it runs. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.page-out) {
+  animation: 160ms ease-out both page-fade-out;
+}
+::view-transition-new(.page-in) {
+  animation: 300ms ease-out 100ms both page-fade-in;
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

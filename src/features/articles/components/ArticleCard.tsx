@@ -36,9 +36,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
           )}
           {article.visibility !== "PUBLIC" && (
             <Badge size="sm" variant="yellow" icon={Lock}>
-              {article.visibility === "MEMBERS_ONLY"
-                ? "Thành viên"
-                : "Xem trước"}
+              {article.visibility === "MEMBERS_ONLY" ? "Hội viên" : "Xem trước"}
             </Badge>
           )}
         </div>

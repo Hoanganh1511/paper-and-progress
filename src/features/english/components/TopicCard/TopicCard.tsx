@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { type ComponentProps } from "react";
 import {
   Briefcase,
@@ -148,7 +149,7 @@ export function TopicCard({ topic, className, ...props }: TopicCardProps) {
 
       <Text as="h3" size="heading-sm" weight="bold" className="mt-3 text-white">
         {topic.href ? (
-          <a
+          <Link
             href={topic.href}
             className={cn(
               "rounded-sharp after:absolute after:inset-0 after:z-20 after:content-['']",
@@ -156,7 +157,7 @@ export function TopicCard({ topic, className, ...props }: TopicCardProps) {
             )}
           >
             {topic.title}
-          </a>
+          </Link>
         ) : (
           topic.title
         )}

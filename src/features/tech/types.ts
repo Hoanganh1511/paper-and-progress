@@ -32,6 +32,8 @@ export interface TechItem {
   id: string;
   title: string;
   icon: TechItemIcon;
+  /** One line on what it is, under the name on its card. */
+  description?: string;
   /** When set, the whole tile links here. */
   href?: string;
 }

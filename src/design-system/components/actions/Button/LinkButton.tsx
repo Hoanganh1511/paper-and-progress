@@ -1,6 +1,7 @@
 import { type ComponentProps } from "react";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "../../../utils/cn";
+import { AppLink } from "../../../utils/AppLink";
 import {
   buttonVariants,
   getButtonIconSize,
@@ -32,9 +33,11 @@ export function LinkButton({
   ...props
 }: LinkButtonProps) {
   const iconSize = getButtonIconSize(size);
+  // An internal link is the app's own (set once by LinkComponentProvider), which changes page in the browser; a link to another site stays a plain anchor.
+  const Component = external ? "a" : AppLink;
 
   return (
-    <a
+    <Component
       ref={ref}
       href={href}
       {...(external && { target: "_blank", rel: "noopener noreferrer" })}
@@ -49,6 +52,6 @@ export function LinkButton({
         <RightIcon aria-hidden="true" size={iconSize} className="shrink-0" />
       )}
       {external && <span className="sr-only">{` ${externalLabel}`}</span>}
-    </a>
+    </Component>
   );
 }

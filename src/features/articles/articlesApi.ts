@@ -11,6 +11,7 @@ import type {
   EditableArticle,
   Engagement,
   FullArticle,
+  PreviewArticle,
   PresignedUpload,
   ReactionType,
   RevisionSummary,
@@ -74,9 +75,17 @@ export async function fetchArticlePage(query: {
   return (await response.json()) as ArticleList;
 }
 
-/** The full text for a signed-in reader (the cached page only holds what a guest may see). */
+/**
+ * What a signed-in reader may read (the cached page only holds what a guest may
+ * see): the full text for a member, the cut text for someone who is not one, and
+ * a 403 for a members-only article.
+ */
 export const getFullArticle = (slug: string) =>
-  call(authedApi.get<FullArticle>(`/articles/${encodeURIComponent(slug)}`));
+  call(
+    authedApi.get<FullArticle | PreviewArticle>(
+      `/articles/${encodeURIComponent(slug)}`,
+    ),
+  );
 
 export const getEngagement = (id: string) =>
   call(authedApi.get<Engagement>(`/articles/${id}/engagement`));

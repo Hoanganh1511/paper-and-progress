@@ -2,6 +2,7 @@ import { type ComponentProps, type ElementType, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "../../../utils/cn";
 import { focusRingClasses } from "../../../primitives/FocusRing";
+import { AppLink } from "../../../utils/AppLink";
 
 export interface BreadcrumbItem {
   label: ReactNode;
@@ -13,7 +14,7 @@ export interface BreadcrumbsProps extends ComponentProps<"nav"> {
   items: BreadcrumbItem[];
   /** Accessible name of the navigation landmark. */
   label?: string;
-  /** Component used for the links, e.g. next/link. Defaults to "a". */
+  /** Component used for the links, e.g. next/link. Defaults to the app's own link (see LinkComponentProvider), or "a". */
   linkComponent?: ElementType<{
     href: string;
     className?: string;
@@ -25,7 +26,7 @@ export interface BreadcrumbsProps extends ComponentProps<"nav"> {
 export function Breadcrumbs({
   items,
   label = "Breadcrumb",
-  linkComponent: LinkComponent = "a",
+  linkComponent: LinkComponent = AppLink,
   className,
   ref,
   ...props
