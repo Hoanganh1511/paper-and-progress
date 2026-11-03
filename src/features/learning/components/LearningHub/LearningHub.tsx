@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, type ComponentProps, type ReactNode } from "react";
-import { Layers, Newspaper } from "lucide-react";
+import { Layers, ListChecks, Newspaper } from "lucide-react";
 import { TabList, TabPanel, TabTrigger, Tabs, cn } from "@/design-system";
 import type { LearningDomain } from "../../types";
 import { DomainPanel } from "../DomainPanel";
 
-export type LibraryTab = "articles" | "techstack";
+export type LibraryTab = "articles" | "techstack" | "lists";
 
 export interface LearningHubProps extends Omit<
   ComponentProps<"div">,
@@ -18,6 +18,8 @@ export interface LearningHubProps extends Omit<
    * and "Techstack" (the domains). Without it the domains are shown on their own.
    */
   articles?: ReactNode;
+  /** The learner's own study lists: a third folder tab, "Danh sách học". */
+  studyLists?: ReactNode;
   /** The tab shown first. */
   defaultTab?: LibraryTab;
 }
@@ -40,6 +42,7 @@ function rememberTab(tab: LibraryTab) {
 export function LearningHub({
   domains,
   articles,
+  studyLists,
   defaultTab = "articles",
   className,
   ...props
@@ -82,18 +85,23 @@ export function LearningHub({
             <Layers aria-hidden="true" size={20} className="shrink-0" />
             Techstack
           </TabTrigger>
+          {studyLists && (
+            <TabTrigger value="lists">
+              <ListChecks aria-hidden="true" size={20} className="shrink-0" />
+              Danh sách học
+            </TabTrigger>
+          )}
         </TabList>
         {/* The square top-left corner is where the first tab begins. */}
-        <div className="relative rounded-tr-[1.5rem] rounded-b-[1.5rem] border-2 border-border-strong bg-surface-card shadow-[8px_8px_0_0_var(--color-border-strong)]">
-          <div
-            aria-hidden="true"
-            className="h-2.5 rounded-tr-[1.4rem] bg-accent-lime"
-          />
+        {/* overflow-hidden clips the lime band to the rounded border; the shadow is outside, so it stays. */}
+        <div className="relative overflow-hidden rounded-tr-[1.5rem] rounded-b-[1.5rem] border-2 border-border-strong bg-surface-card shadow-[8px_8px_0_0_var(--color-border-strong)]">
+          <div aria-hidden="true" className="h-2.5 bg-accent-lime" />
           <div className="p-5 sm:p-7 lg:p-8">
             <TabPanel value="articles">{articles}</TabPanel>
             <TabPanel value="techstack" className="flex flex-col gap-10">
               {sections}
             </TabPanel>
+            {studyLists && <TabPanel value="lists">{studyLists}</TabPanel>}
           </div>
         </div>
       </Tabs>

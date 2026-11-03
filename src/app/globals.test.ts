@@ -17,6 +17,22 @@ function block(marker: string) {
   throw new Error(`Unclosed block after "${marker}"`);
 }
 
+describe("rich text", () => {
+  it("gives an empty paragraph a line, which has no height of its own", () => {
+    const rule = block(".rich-text p:empty");
+    // as tall as one line of the text (line-height 1.6)
+    expect(rule).toMatch(/min-height:\s*1\.6em/);
+  });
+
+  it("keeps the spaces a writer put on a blank line, as the editor does, so that line is not 0 tall", () => {
+    expect(block(".rich-text p {")).toMatch(/white-space:\s*pre-wrap/);
+  });
+
+  it("does not make the whole article keep its whitespace: a newline between two blocks would show as a gap", () => {
+    expect(block(".rich-text {")).not.toMatch(/white-space/);
+  });
+});
+
 function customProperties(text: string) {
   const result: Record<string, string> = {};
   for (const match of text.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)) {

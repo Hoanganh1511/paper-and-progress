@@ -155,7 +155,6 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
           items={[
             { label: "Trang chủ", href: "/" },
             { label: "Thư viện kiến thức", href: "/learn" },
-            { label: "Bài viết", href: "/articles" },
             { label: title },
           ]}
           className="min-w-0"
@@ -215,9 +214,7 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
               <ul className="flex flex-wrap gap-1.5" aria-label="Chủ đề">
                 {meta.tags.map((tag) => (
                   <li key={tag.slug}>
-                    <Link href={`/articles?tag=${tag.slug}`}>
-                      <Badge size="sm">{tag.name}</Badge>
-                    </Link>
+                    <Badge size="sm">{tag.name}</Badge>
                   </li>
                 ))}
               </ul>
@@ -263,7 +260,13 @@ export function ArticleReader({ slug, result }: ArticleReaderProps) {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-[calc(var(--app-header-height,4rem)+1.5rem)] max-h-[calc(100dvh-var(--app-header-height,4rem)-3rem)] overflow-y-auto pr-2 pb-2">
+          {/*
+            overflow-y-auto clips on both axes, and the rays at the corners of the contents stick out of
+            it: 32px above the tab (they are 36px tall and 4px down) and 8px beside the next-section button.
+            The padding is room for them (pt-10 is 40px, pl-4 16px); the negative margins pull the box back
+            so the card does not move, and `top` is lowered by the same room so it still sits under the header.
+          */}
+          <div className="sticky top-[calc(var(--app-header-height,4rem)+0.5rem)] -mt-10 -ml-4 max-h-[calc(100dvh-var(--app-header-height,4rem)-3rem)] overflow-y-auto pt-10 pr-2 pb-2 pl-4">
             <TableOfContents items={toc} />
           </div>
         </aside>

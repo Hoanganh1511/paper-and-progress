@@ -31,6 +31,9 @@ const api = vi.hoisted(() => ({
   getToday: vi.fn(),
   getLearn: vi.fn(),
   completeLearn: vi.fn(),
+  addWordEntry: vi.fn(),
+  removeWordEntry: vi.fn(),
+  setWordMark: vi.fn(),
   getPractice: vi.fn(),
   submitPractice: vi.fn(),
   getTest: vi.fn(),
@@ -136,6 +139,17 @@ const learn: LearnResponse = {
       ],
     },
   ],
+  // Every word already has its sentences, so the learn step can be finished.
+  sentencesPerWord: 2,
+  entries: Object.fromEntries(
+    [1, 2, 3].map((id) => [
+      id,
+      [
+        { id: id * 10, kind: "SENTENCE", text: "First sentence." },
+        { id: id * 10 + 1, kind: "SENTENCE", text: "Second sentence." },
+      ],
+    ]),
+  ),
 };
 
 const practice: PracticeResponse = {
@@ -440,17 +454,36 @@ describe("DailyGatePanel: learn", () => {
     await screen.findByText("Thẻ 1 / 3");
   }
 
-  it("needs every card to be seen before it can be completed", async () => {
+  it("counts the words written about, not the cards turned over", async () => {
+    await openLearn();
+    // every word has its sentences and not one card was turned: done
+    expect(
+      screen.getByRole("button", { name: "Hoàn thành phần học" }),
+    ).toBeEnabled();
+    expect(screen.queryByText(/Xem hết/)).toBeNull();
+  });
+
+  it("needs each word written about or marked known, and saves the mark", async () => {
+    api.getLearn.mockResolvedValue({
+      ...learn,
+      entries: {},
+      marks: {},
+    });
+    api.setWordMark.mockResolvedValue({ mark: "known" });
     await openLearn();
     const complete = screen.getByRole("button", {
       name: "Hoàn thành phần học",
     });
     expect(complete).toBeDisabled();
-    expect(screen.getByText(/Xem hết 3 thẻ/)).toBeInTheDocument();
+    expect(screen.getByText(/Còn 3 từ chưa học/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Sau/ }));
-    expect(screen.getByText("Thẻ 2 / 3")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /Sau/ }));
+    for (const id of [1, 2, 3]) {
+      await userEvent.click(screen.getByRole("button", { name: "Đã biết" }));
+      expect(api.setWordMark).toHaveBeenLastCalledWith(5, id, "known");
+      if (id < 3) {
+        await userEvent.click(screen.getByRole("button", { name: /Sau/ }));
+      }
+    }
     expect(complete).toBeEnabled();
   });
 
@@ -460,7 +493,9 @@ describe("DailyGatePanel: learn", () => {
       screen.getByRole("button", { name: /Phrasal verbs/ }),
     );
     expect(screen.getByText("Thẻ 3 / 3")).toBeInTheDocument();
-    expect(screen.getByText("carry on")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Lật thẻ carry on/ }),
+    ).toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: /Lật thẻ carry on/ }),

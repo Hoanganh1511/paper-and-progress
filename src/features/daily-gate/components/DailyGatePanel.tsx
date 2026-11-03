@@ -12,6 +12,7 @@ import {
 } from "@/design-system";
 import { useAdminQuery, type AdminQuery } from "@/features/admin/useAdminQuery";
 import {
+  addWordEntry,
   completeLearn,
   createPhrase,
   getCalendar,
@@ -19,6 +20,8 @@ import {
   getPractice,
   listPhrases,
   getTest,
+  removeWordEntry,
+  setWordMark,
   submitPractice,
   submitTest,
 } from "../dailyGateApi";
@@ -278,6 +281,29 @@ function LearnStep({
                 sampleSentence: values.sampleSentence || undefined,
                 wordId: word.id,
               });
+              return undefined;
+            } catch (error) {
+              return messageOf(error);
+            }
+          }}
+          onAddEntry={async (word, kind, text) => {
+            try {
+              return await addWordEntry(today.lessonId, word.id, kind, text);
+            } catch (error) {
+              return { error: messageOf(error) };
+            }
+          }}
+          onRemoveEntry={async (entry) => {
+            try {
+              await removeWordEntry(entry.id);
+              return undefined;
+            } catch (error) {
+              return messageOf(error);
+            }
+          }}
+          onMark={async (word, mark) => {
+            try {
+              await setWordMark(today.lessonId, word.id, mark);
               return undefined;
             } catch (error) {
               return messageOf(error);

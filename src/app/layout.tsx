@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
-import { SkipLink, ThemeScript } from "@/design-system";
+import { SkipLink, ThemeScript, ToastProvider } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
 import { DailyGateLauncher } from "@/features/daily-gate";
@@ -68,42 +68,45 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         )}
         {/* First in the page, so keyboard users can jump past the header. */}
         <SkipLink lang="vi">Bỏ qua đến nội dung chính</SkipLink>
-        <AuthProvider>
-          {/* Internal links change page in the browser instead of loading it again. */}
-          <RouterLinks>
-            {/* These read the current path, which a dynamic route (/articles/[slug]) only knows at request time, so they stream in. */}
-            <Suspense
-              fallback={
-                <div
-                  aria-hidden="true"
-                  className="h-[var(--app-header-height,4rem)]"
+        {/* Lets any screen show a short message ("Đã lưu") that leaves by itself. */}
+        <ToastProvider lang="vi">
+          <AuthProvider>
+            {/* Internal links change page in the browser instead of loading it again. */}
+            <RouterLinks>
+              {/* These read the current path, which a dynamic route (/articles/[slug]) only knows at request time, so they stream in. */}
+              <Suspense
+                fallback={
+                  <div
+                    aria-hidden="true"
+                    className="h-[var(--app-header-height,4rem)]"
+                  />
+                }
+              >
+                <SessionHeader
+                  isSticky
+                  facebookHref={FACEBOOK_COMMUNITY_URL}
+                  score={SAMPLE_SCORE}
                 />
-              }
-            >
-              <SessionHeader
-                isSticky
-                facebookHref={FACEBOOK_COMMUNITY_URL}
-                score={SAMPLE_SCORE}
-              />
-            </Suspense>
-            {/* Grows to fill short pages, so the footer stays at the bottom. A
+              </Suspense>
+              {/* Grows to fill short pages, so the footer stays at the bottom. A
               column, so a page can in turn grow to fill it (e.g. to centre). */}
-            <div className="flex flex-1 flex-col">{children}</div>
-            {/* These pages fill exactly one screen, so no footer below them. */}
-            <Suspense fallback={null}>
-              <HideOnRoutes paths={["/devlog"]}>
-                <AppFooter
-                  zaloHref={ZALO_SUPPORT_URL}
-                  communityHref={FACEBOOK_COMMUNITY_URL}
-                />
-              </HideOnRoutes>
-            </Suspense>
-            {/* Opens the Daily English Gate; stacks above the dev todo button in development. */}
-            <Suspense fallback={null}>
-              <DailyGateLauncher hasDevTodo={DevTodoWidget !== null} />
-            </Suspense>
-          </RouterLinks>
-        </AuthProvider>
+              <div className="flex flex-1 flex-col">{children}</div>
+              {/* These pages fill exactly one screen, so no footer below them. */}
+              <Suspense fallback={null}>
+                <HideOnRoutes paths={["/devlog"]}>
+                  <AppFooter
+                    zaloHref={ZALO_SUPPORT_URL}
+                    communityHref={FACEBOOK_COMMUNITY_URL}
+                  />
+                </HideOnRoutes>
+              </Suspense>
+              {/* Opens the Daily English Gate; stacks above the dev todo button in development. */}
+              <Suspense fallback={null}>
+                <DailyGateLauncher hasDevTodo={DevTodoWidget !== null} />
+              </Suspense>
+            </RouterLinks>
+          </AuthProvider>
+        </ToastProvider>
         {DevTodoWidget && <DevTodoWidget />}
       </body>
     </html>

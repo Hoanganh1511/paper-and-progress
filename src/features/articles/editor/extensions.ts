@@ -2,6 +2,7 @@ import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Image from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
 import { common, createLowlight } from "lowlight";
+import { ExitMarkInTable } from "./exitMarkInTable";
 
 /** `common` (about 35 languages), not `all`, to keep the editor chunk small. */
 const lowlight = createLowlight(common);
@@ -11,6 +12,8 @@ export const articleExtensions = [
   Image.configure({ inline: false }),
   TableKit.configure({ table: { resizable: false } }),
   CodeBlockLowlight.configure({ lowlight }),
+  // So → steps out of inline code at the end of a table cell, as it does in a paragraph.
+  ExitMarkInTable,
 ];
 
 /** The shared editor's own code block is replaced by the lowlight one above. */

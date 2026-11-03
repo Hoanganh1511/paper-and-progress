@@ -88,7 +88,21 @@ export function filterLogs(
     if (log.isArchived !== filters.isArchived) return false;
     if (filters.skill !== "all" && log.skill !== filters.skill) return false;
     if (!query) return true;
-    return [log.title, log.goal, log.content, log.notes, ...log.tags]
+    return [
+      log.title,
+      log.goal,
+      log.content,
+      log.notes,
+      ...log.tags,
+      ...(log.dailyEnglish?.words.flatMap((word) => [
+        word.word,
+        word.note ?? "",
+        ...word.sentences,
+        ...word.collocations,
+        ...word.related,
+        ...(word.others?.flatMap((group) => group.items) ?? []),
+      ]) ?? []),
+    ]
       .join("\n")
       .toLowerCase()
       .includes(query);
@@ -133,4 +147,14 @@ export function toSafeUrl(reference: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** "a long voyage: một chuyến đi dài" -> the phrase and what it means; without a ":" it is all phrase. */
+export function splitMeaning(text: string): { term: string; meaning?: string } {
+  const at = text.indexOf(":");
+  if (at <= 0) return { term: text.trim() };
+  const meaning = text.slice(at + 1).trim();
+  return meaning
+    ? { term: text.slice(0, at).trim(), meaning }
+    : { term: text.slice(0, at).trim() };
 }

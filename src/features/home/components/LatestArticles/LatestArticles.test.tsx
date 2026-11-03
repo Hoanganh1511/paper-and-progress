@@ -55,8 +55,8 @@ describe("LatestArticles", () => {
       screen.getByText("Khám phá những bài viết vừa được đăng trên Baolingo."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Xem tất cả bài viết" }),
-    ).toHaveAttribute("href", "/articles");
+      screen.queryByRole("link", { name: "Xem tất cả bài viết" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the first three articles, each linking to its own slug", () => {
@@ -180,10 +180,6 @@ describe("LatestArticles", () => {
 
     it("lets the keyboard reach the controls and the cards", async () => {
       render(<LatestArticles articles={nine} />);
-      await userEvent.tab();
-      expect(
-        screen.getByRole("link", { name: "Xem tất cả bài viết" }),
-      ).toHaveFocus();
       await userEvent.tab();
       expect(screen.getByRole("link", { name: "Bài viết số 1" })).toHaveFocus();
     });

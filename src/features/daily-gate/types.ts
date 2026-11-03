@@ -1,3 +1,7 @@
+import type {
+  CategoryItem,
+  ContentCategory,
+} from "@/features/vocabulary-admin/types";
 export type VocabSection =
   | "TOPIC_CONTRAST"
   | "PHRASAL_VERB"
@@ -33,6 +37,8 @@ export interface ActiveToday {
   type: LessonType;
   units: GateUnit[];
   totalWords: number;
+  /** Words with all their sentences written; kept on the server. */
+  learnedWords?: number;
   /** False while the words of these units are still to be written; nothing is locked then. */
   isReady: boolean;
   progress: GateProgress;
@@ -54,6 +60,14 @@ export interface LearnWord {
   contrast: string | null;
   forms: string | null;
   pattern: string | null;
+  // What the admin wrote for the word, when they did (see the vocabulary admin).
+  pronunciation?: string | null;
+  partsOfSpeech?: string[];
+  level?: string | null;
+  topics?: string[];
+  meaningVi?: string | null;
+  /** Only the categories that have items. */
+  content?: Partial<Record<ContentCategory, CategoryItem[]>>;
 }
 
 export interface LearnSection {
@@ -66,6 +80,32 @@ export interface LearnResponse {
   unitTopic: string;
   sections: LearnSection[];
   totalWords: number;
+  /** Sentences the learner must write for each word before it counts as learned. */
+  sentencesPerWord?: number;
+  /** What the learner wrote today, by word id: sentences, collocations and related words. */
+  entries?: Record<number, WordEntry[]>;
+  /** "Đã biết" / "Cần ôn lại", by word id; kept on the server. */
+  marks?: Record<number, "known" | "review">;
+}
+
+/** What a learner writes for a word: sentences (required) and one list for each way of remembering it. */
+export type EntryKind =
+  | "SENTENCE"
+  | "COLLOCATION"
+  | "RELATED"
+  | "WORD_FAMILY"
+  | "PHRASAL_VERB"
+  | "WORD_PATTERN"
+  | "WORD_FORMATION"
+  | "DEPENDENT_PREPOSITION"
+  | "SYNONYM"
+  | "ANTONYM"
+  | "CONVERSATION";
+
+export interface WordEntry {
+  id: number;
+  kind: EntryKind;
+  text: string;
 }
 
 export interface MatchingQuestion {

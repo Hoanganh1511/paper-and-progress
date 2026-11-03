@@ -19,6 +19,7 @@ import {
   Textarea,
 } from "@/design-system";
 import { useAdminQuery } from "@/features/admin/useAdminQuery";
+import { addStep } from "@/features/study-lists";
 import { RichTextEditor } from "@/features/rich-text";
 import {
   createArticle,
@@ -41,7 +42,13 @@ import {
 import { articleExtensions, articleStarterKit } from "./extensions";
 import { imageFilesOf, insertImages } from "./imageInsert";
 import { RevisionPanel } from "./RevisionPanel";
+import {
+  StudySectionBanner,
+  type StudySectionTarget,
+} from "./StudySectionBanner";
+import { TableTools } from "./TableTools";
 import { TagPicker } from "./TagPicker";
+import { AUTOSAVE_DELAY_MS } from "./autosaveDelay";
 import { useAutosave } from "./useAutosave";
 
 const NO_SERIES = "none";
@@ -101,6 +108,8 @@ export interface ArticleEditorProps {
   initial?: EditableArticle;
   /** Called after a version was restored, with the article to reload the editor from. */
   onRestored?: (article: EditableArticle) => void;
+  /** The part of a study list this new article is written for; it joins that part when first saved. */
+  addToSection?: StudySectionTarget;
 }
 
 /**
@@ -108,7 +117,11 @@ export interface ArticleEditorProps {
  * read it, and when it goes live. It saves by itself a moment after you stop
  * typing; the first save creates the article.
  */
-export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
+export function ArticleEditor({
+  initial,
+  onRestored,
+  addToSection,
+}: ArticleEditorProps) {
   const [draft, setDraft] = useState(() => draftOf(initial));
   const [articleId, setArticleId] = useState(initial?.id);
   const [status, setStatus] = useState<ArticleStatus>(
@@ -122,6 +135,8 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
   const [uploads, setUploads] = useState(0);
   const [imageError, setImageError] = useState<string>();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isInSection, setIsInSection] = useState(false);
+  const sectionRef = useRef(addToSection);
 
   const idRef = useRef(initial?.id);
   const lastSlug = useRef(initial?.slug);
@@ -152,6 +167,20 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
       setPublishedSlug(created.slug);
       // The address now names the article, without reloading the editor.
       window.history.replaceState(null, "", `/write/${created.id}`);
+      // Written for a part of a study list: it goes in there, once, as that part's step.
+      if (sectionRef.current) {
+        try {
+          await addStep(sectionRef.current.sectionId, {
+            articleId: created.id,
+          });
+          setIsInSection(true);
+        } catch {
+          setError(
+            "Đã lưu bài, nhưng chưa thêm được vào danh sách học. Bạn thêm lại từ trang danh sách (nút “Thêm bài viết”).",
+          );
+        }
+        sectionRef.current = undefined;
+      }
       return;
     }
     const updated = await updateArticle(idRef.current, {
@@ -167,6 +196,7 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
   const autosave = useAutosave({
     value: draft,
     save,
+    delay: AUTOSAVE_DELAY_MS,
     // Nothing is created before there is a title and some text.
     isEnabled: draft.title.trim().length > 0 && hasContent,
   });
@@ -247,11 +277,11 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
 
   const statusText =
     autosave.status === "saving"
-      ? "Đang lưu..."
+      ? "Đang lưu nháp..."
       : autosave.status === "error"
         ? "Lỗi, thử lại"
         : autosave.savedAt
-          ? `Đã lưu lúc ${clock(autosave.savedAt)}`
+          ? `${status === "DRAFT" ? "Đã lưu nháp" : "Đã lưu"} lúc ${clock(autosave.savedAt)}`
           : hasContent && draft.title.trim()
             ? "Chưa lưu"
             : "Nhập tiêu đề và nội dung để bắt đầu";
@@ -262,6 +292,9 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="flex min-w-0 flex-col gap-4">
+        {addToSection && (
+          <StudySectionBanner target={addToSection} isAdded={isInSection} />
+        )}
         <FormField label="Tiêu đề" required>
           <Input
             value={draft.title}
@@ -307,6 +340,8 @@ export function ArticleEditor({ initial, onRestored }: ArticleEditorProps) {
             }}
             renderToolbarExtras={(editor) => (
               <>
+                {/* Floats over the table the cursor is in; nothing here until it is. */}
+                <TableTools editor={editor} />
                 <button
                   type="button"
                   aria-label="Chèn ảnh"

@@ -8,6 +8,7 @@ import {
   toSafeUrl,
 } from "../../logs";
 import type { DiaryLog } from "../../types";
+import { DailyEnglishSection } from "./DailyEnglishSection";
 import { SKILL_BADGE_VARIANT } from "./DiaryTimeline";
 
 export interface DiaryDetailProps {
@@ -89,6 +90,7 @@ export function DiaryDetail({ log, onEdit }: DiaryDetailProps) {
           </ul>
         </Section>
       )}
+      {log.dailyEnglish && <DailyEnglishSection data={log.dailyEnglish} />}
       <Section title="Ghi chú">{log.notes}</Section>
       {log.tags.length > 0 && (
         <Section title="Tag">

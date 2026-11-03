@@ -6,6 +6,7 @@ import { Alert, Button, Skeleton } from "@/design-system";
 import { useAdminQuery } from "@/features/admin/useAdminQuery";
 import { getEditable } from "../articlesApi";
 import type { EditableArticle } from "../types";
+import type { StudySectionTarget } from "./StudySectionBanner";
 
 // TipTap and lowlight are heavy and only this page needs them.
 const ArticleEditor = dynamic(
@@ -16,7 +17,13 @@ const ArticleEditor = dynamic(
   },
 );
 
-function Loaded({ article }: { article?: EditableArticle }) {
+function Loaded({
+  article,
+  addToSection,
+}: {
+  article?: EditableArticle;
+  addToSection?: StudySectionTarget;
+}) {
   const [current, setCurrent] = useState(article);
   // A new key starts the editor over from the restored version.
   const [round, setRound] = useState(0);
@@ -24,6 +31,7 @@ function Loaded({ article }: { article?: EditableArticle }) {
     <ArticleEditor
       key={round}
       initial={current}
+      addToSection={addToSection}
       onRestored={(restored) => {
         setCurrent(restored);
         setRound((value) => value + 1);
@@ -35,10 +43,15 @@ function Loaded({ article }: { article?: EditableArticle }) {
 export interface ArticleEditorPageProps {
   /** Omit to write a new article. */
   id?: string;
+  /** A new article written for a part of a study list. */
+  addToSection?: StudySectionTarget;
 }
 
 /** Loads the article to edit (if any), then shows the editor. */
-export function ArticleEditorPage({ id }: ArticleEditorPageProps) {
+export function ArticleEditorPage({
+  id,
+  addToSection,
+}: ArticleEditorPageProps) {
   const article = useAdminQuery(
     () => (id ? getEditable(id) : Promise.resolve(undefined)),
     `editable-${id ?? "new"}`,
@@ -66,5 +79,5 @@ export function ArticleEditorPage({ id }: ArticleEditorPageProps) {
       </div>
     );
   }
-  return <Loaded article={article.data} />;
+  return <Loaded article={article.data} addToSection={addToSection} />;
 }

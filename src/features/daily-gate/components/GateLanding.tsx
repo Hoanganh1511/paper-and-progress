@@ -71,6 +71,12 @@ export function GateLanding({
           value={(completedDays / 30) * 100}
           label={`Tiến độ 30 ngày: ${completedDays} trên 30 ngày`}
         />
+        {today.isReady && today.totalWords > 0 && (
+          <ProgressBar
+            value={((today.learnedWords ?? 0) / today.totalWords) * 100}
+            label={`Từ đã học hôm nay: ${today.learnedWords ?? 0} trên ${today.totalWords} từ`}
+          />
+        )}
         {today.type === "REVIEW" && (
           <Text
             size="body-md"

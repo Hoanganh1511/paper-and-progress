@@ -370,6 +370,19 @@ body {
 .rich-text > * + * {
   margin-top: 0.5em;
 }
+/*
+ * A blank line the writer left on purpose is a paragraph with nothing in it:
+ * `<p></p>`, or `<p>   </p>` when they pressed space on it. Both are 0 tall in a
+ * page, so the gap vanished in the published article, though the editor showed
+ * it. The editor keeps the writer's spaces (white-space: pre-wrap), so the article
+ * does too: a paragraph of spaces is then a line. An empty one gets a line of its own.
+ */
+.rich-text p {
+  white-space: pre-wrap;
+}
+.rich-text p:empty {
+  min-height: 1.6em;
+}
 .rich-text h1,
 .rich-text h2,
 .rich-text h3 {

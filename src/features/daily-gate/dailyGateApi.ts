@@ -19,6 +19,8 @@ import type {
   TestResponse,
   TestResult,
   TodayResponse,
+  EntryKind,
+  WordEntry,
 } from "./types";
 
 /** A failed Daily Gate call, carrying the message to show. */
@@ -57,6 +59,38 @@ export const getToday = () =>
 
 export const getLearn = () =>
   call(authedApi.get<LearnResponse>(`${base}/learn`));
+
+export const addWordEntry = (
+  lessonId: number,
+  wordId: number,
+  kind: EntryKind,
+  text: string,
+) =>
+  call(
+    authedApi.post<{ entries: WordEntry[] }>(`${base}/learn/entries`, {
+      lessonId,
+      wordId,
+      kind,
+      text,
+    }),
+  );
+
+export const removeWordEntry = (id: number) =>
+  call(authedApi.delete<{ deleted: true }>(`${base}/learn/entries/${id}`));
+
+/** `null` takes the mark off. */
+export const setWordMark = (
+  lessonId: number,
+  wordId: number,
+  mark: "known" | "review" | null,
+) =>
+  call(
+    authedApi.put<{ mark: typeof mark }>(`${base}/learn/marks`, {
+      lessonId,
+      wordId,
+      mark,
+    }),
+  );
 
 export const completeLearn = (lessonId: number) =>
   call(

@@ -11,6 +11,12 @@ vi.mock("@/features/auth", () => ({
   useAuth: () => ({ isAuthenticated: true, isLoading: false, user: null }),
 }));
 
+const study = vi.hoisted(() => ({
+  addStep: vi.fn(),
+  getStudyList: vi.fn(),
+}));
+vi.mock("@/features/study-lists", () => study);
+
 const api = vi.hoisted(() => ({
   createArticle: vi.fn(),
   updateArticle: vi.fn(),
@@ -180,6 +186,242 @@ describe("ArticleEditor", () => {
     expect(
       screen.getByText("Nhập tiêu đề và nội dung để bắt đầu"),
     ).toBeInTheDocument();
+  });
+
+  describe("tables", () => {
+    const insertTable = async () => {
+      render(<ArticleEditor />);
+      const body = await screen.findByRole("textbox", {
+        name: "Nội dung bài viết",
+      });
+      await userEvent.click(body);
+      await userEvent.click(screen.getByRole("button", { name: "Chèn bảng" }));
+      return body;
+    };
+    const tools = () => screen.getByRole("group", { name: "Chỉnh bảng" });
+    const size = (text: string) =>
+      expect(within(tools()).getByRole("status")).toHaveTextContent(text);
+    const press = (name: string) =>
+      userEvent.click(within(tools()).getByRole("button", { name }));
+
+    it("has no table tools until the cursor is in a table", async () => {
+      render(<ArticleEditor />);
+      await screen.findByRole("textbox", { name: "Nội dung bài viết" });
+      expect(screen.queryByRole("group", { name: "Chỉnh bảng" })).toBeNull();
+    });
+
+    it("adds and removes rows and columns of the table the cursor is in", async () => {
+      const body = await insertTable();
+      size("Bảng 3 hàng × 3 cột");
+      expect(body.querySelectorAll("tr")).toHaveLength(3);
+
+      await press("Thêm hàng phía dưới");
+      size("Bảng 4 hàng × 3 cột");
+      expect(body.querySelectorAll("tr")).toHaveLength(4);
+
+      await press("Thêm hàng phía trên");
+      size("Bảng 5 hàng × 3 cột");
+
+      await press("Thêm cột bên phải");
+      size("Bảng 5 hàng × 4 cột");
+      expect(body.querySelectorAll("tr")[0].children).toHaveLength(4);
+
+      await press("Thêm cột bên trái");
+      size("Bảng 5 hàng × 5 cột");
+
+      await press("Xoá hàng này");
+      await press("Xoá hàng này");
+      size("Bảng 3 hàng × 5 cột");
+      await press("Xoá cột này");
+      await press("Xoá cột này");
+      size("Bảng 3 hàng × 3 cột");
+    });
+
+    it("turns the header row off and on", async () => {
+      const body = await insertTable();
+      expect(body.querySelectorAll("th").length).toBeGreaterThan(0);
+      const toggle = within(tools()).getByRole("button", {
+        name: "Hàng tiêu đề",
+      });
+      await userEvent.click(toggle);
+      expect(body.querySelectorAll("th")).toHaveLength(0);
+      await userEvent.click(toggle);
+      expect(body.querySelectorAll("th").length).toBeGreaterThan(0);
+    });
+
+    it("deletes the whole table, and the tools go with it", async () => {
+      const body = await insertTable();
+      await press("Xoá cả bảng");
+      expect(body.querySelector("table")).toBeNull();
+      expect(screen.queryByRole("group", { name: "Chỉnh bảng" })).toBeNull();
+    });
+
+    it("floats over the table, outside the editor's own box, so nothing can cut it off", async () => {
+      const body = await insertTable();
+      const bar = tools();
+      expect(body.contains(bar)).toBe(false);
+      expect(bar).toHaveClass("fixed");
+      // it has worked out where to go (over, under or held at the top of the screen)
+      expect(["above", "below", "stuck"]).toContain(
+        bar.getAttribute("data-placement"),
+      );
+    });
+
+    it("goes away when you click out of the editor, so it is not left floating over the page", async () => {
+      await insertTable();
+      expect(
+        screen.getByRole("group", { name: "Chỉnh bảng" }),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("textbox", { name: "Tiêu đề" }));
+      expect(screen.queryByRole("group", { name: "Chỉnh bảng" })).toBeNull();
+    });
+
+    it("has no axe violations with the tools shown", async () => {
+      await insertTable();
+      expect(await axe(tools())).toHaveNoViolations();
+    });
+  });
+
+  describe("blank lines", () => {
+    it("saves a line left blank as an empty paragraph, and one with spaces as a paragraph of spaces", async () => {
+      api.createArticle.mockResolvedValue({ id: "a1", slug: "x" });
+      render(<ArticleEditor />);
+      await userEvent.type(
+        screen.getByRole("textbox", { name: "Tiêu đề" }),
+        "Tiêu đề",
+      );
+      const body = await screen.findByRole("textbox", {
+        name: "Nội dung bài viết",
+      });
+      await userEvent.click(body);
+      await userEvent.keyboard(
+        "first{Enter}{Enter}third{Enter}   {Enter}fifth{Enter}{Enter}{Enter}last",
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+      await waitFor(() => expect(api.createArticle).toHaveBeenCalled());
+      // every line the writer made is in what is saved, none swallowed
+      expect(api.createArticle.mock.calls[0][0].contentHtml).toBe(
+        "<p>first</p><p></p><p>third</p><p>   </p><p>fifth</p><p></p><p></p><p>last</p>",
+      );
+    });
+  });
+
+  describe("inline code beside other text", () => {
+    const open = async (inTable: boolean) => {
+      render(<ArticleEditor />);
+      const body = await screen.findByRole("textbox", {
+        name: "Nội dung bài viết",
+      });
+      await userEvent.click(body);
+      if (inTable) {
+        await userEvent.click(
+          screen.getByRole("button", { name: "Chèn bảng" }),
+        );
+      }
+      return body;
+    };
+    const cells = (body: HTMLElement) =>
+      [...body.querySelectorAll("th, td")].map((cell) => cell.innerHTML);
+
+    it("keeps writing beside `code` in the same table cell after pressing →", async () => {
+      const body = await open(true);
+      await userEvent.keyboard("`code`");
+      await userEvent.keyboard("{ArrowRight}");
+      await userEvent.keyboard("abc");
+      const [first, second] = cells(body);
+      // the text goes on in the cell the code is in, outside the code, not in the next cell
+      expect(first).toContain("<code>code</code>");
+      expect(first).toContain("abc");
+      expect(first).not.toMatch(/<code>[^<]*abc/);
+      expect(second).not.toContain("abc");
+    });
+
+    it("does the same when the code was switched on with the toolbar", async () => {
+      const body = await open(true);
+      await userEvent.click(
+        screen.getByRole("button", { name: "Mã nội dòng" }),
+      );
+      await userEvent.keyboard("ab");
+      await userEvent.keyboard("{ArrowRight}");
+      await userEvent.keyboard("cd");
+      const [first, second] = cells(body);
+      expect(first).toContain("<code>ab</code>");
+      expect(first).toContain("cd");
+      expect(first).not.toMatch(/<code>[^<]*cd/);
+      expect(second).not.toContain("cd");
+    });
+
+    it("moves to the next cell with → once it is out of the code", async () => {
+      const body = await open(true);
+      await userEvent.keyboard("`code`");
+      await userEvent.keyboard("{ArrowRight}");
+      await userEvent.keyboard("{ArrowRight}");
+      await userEvent.keyboard("next");
+      const [first, second] = cells(body);
+      expect(first).not.toContain("next");
+      expect(second).toContain("next");
+    });
+
+    it("leaves a paragraph as it was", async () => {
+      const body = await open(false);
+      await userEvent.keyboard("`code`");
+      await userEvent.keyboard("{ArrowRight}");
+      await userEvent.keyboard("abc");
+      expect(body.querySelector("p")?.innerHTML).toMatch(
+        /<code>code<\/code>.*abc/,
+      );
+    });
+  });
+
+  describe("written for a part of a study list", () => {
+    const target = { listId: "l1", sectionId: "s1" };
+    beforeEach(() => {
+      study.getStudyList.mockResolvedValue({
+        id: "l1",
+        title: "Ôn thi AWS",
+        sections: [{ id: "s1", title: "Fundamentals", steps: [] }],
+      });
+    });
+
+    it("says where the article will go, and adds it as a step once it is first saved", async () => {
+      api.createArticle.mockResolvedValue({ id: "a1", slug: "bai-dau-tien" });
+      study.addStep.mockResolvedValue({});
+      render(<ArticleEditor addToSection={target} />);
+      expect(
+        await screen.findByText(
+          /sẽ được thêm vào phần “Fundamentals” của danh sách “Ôn thi AWS”/,
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Về danh sách học" }),
+      ).toHaveAttribute("href", "/study-lists/l1");
+      await write();
+
+      await userEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+      await waitFor(() =>
+        expect(study.addStep).toHaveBeenCalledWith("s1", { articleId: "a1" }),
+      );
+      expect(
+        await screen.findByText(/Đã thêm bài này vào phần/),
+      ).toBeInTheDocument();
+
+      // it goes in once, when the article is created
+      expect(study.addStep).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the article and says so when it could not be added", async () => {
+      api.createArticle.mockResolvedValue({ id: "a1", slug: "bai-dau-tien" });
+      study.addStep.mockRejectedValue(new Error("Máy chủ bận"));
+      render(<ArticleEditor addToSection={target} />);
+      await write();
+      await userEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+      expect(
+        await screen.findByText(
+          /Đã lưu bài, nhưng chưa thêm được vào danh sách học/,
+        ),
+      ).toBeInTheDocument();
+      expect(window.location.pathname).toBe("/write/a1");
+    });
   });
 
   it("creates the article on the first save, then publishes it", async () => {

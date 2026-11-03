@@ -8,6 +8,7 @@ import {
   LibraryArticlesSection,
   LibraryHero,
 } from "@/features/learning";
+import { StudyListsTab } from "@/features/study-lists";
 
 export const metadata: Metadata = {
   title: "Học tập theo lĩnh vực - Paper & Progress",
@@ -30,8 +31,10 @@ async function LearnContent({
   return (
     <LearningHub
       domains={domains}
-      // `/learn?tab=techstack` opens on the Techstack tab.
-      defaultTab={tab === "techstack" ? "techstack" : "articles"}
+      // `/learn?tab=techstack` opens on the Techstack tab, `?tab=lists` on Danh sách học.
+      defaultTab={tab === "techstack" || tab === "lists" ? tab : "articles"}
+      // The learner's own lists load in the browser, with their sign-in.
+      studyLists={<StudyListsTab />}
       // Its own Suspense: the domains do not wait for the articles.
       articles={
         <Suspense

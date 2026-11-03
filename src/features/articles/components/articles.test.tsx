@@ -410,13 +410,38 @@ describe("ArticleReader: the way around it", () => {
       <ArticleReader slug="hello" result={{ kind: "full", article: full() }} />,
     );
 
-  it("has a path back to the list", () => {
+  it("leaves room around the table of contents for the rays at its corners, which the scrolling box would cut off", () => {
+    const { container } = readFull();
+    const box = container.querySelector("aside > div") as HTMLElement;
+    // overflow-y: auto also clips sideways, so it needs padding where the rays stick out
+    expect(box).toHaveClass("overflow-y-auto");
+    for (const room of ["pt-10", "pl-4"]) expect(box).toHaveClass(room);
+    // and the same amount of negative margin, so the card stays where it was
+    for (const pull of ["-mt-10", "-ml-4"]) expect(box).toHaveClass(pull);
+  });
+
+  it("leaves at least as much room above the contents as its rays stick out, so they are not clipped", () => {
+    const { container } = readFull();
+    const box = container.querySelector("aside > div") as HTMLElement;
+    const rays = container.querySelector("aside svg.bottom-full") as SVGElement;
+    // Tailwind sizes: 1 is 4px. `h-9` is 36px; `-mb-1` pulls it 4px down.
+    const px = (element: Element, prefix: string) => {
+      const token = (element.getAttribute("class") ?? "")
+        .split(/\s+/)
+        .find((name) => new RegExp(`^${prefix}-\\d+$`).test(name));
+      return token ? Number(token.slice(prefix.length + 1)) * 4 : 0;
+    };
+    const overhang = px(rays, "h") - px(rays, "-mb");
+    expect(overhang).toBeGreaterThan(0);
+    expect(px(box, "pt")).toBeGreaterThanOrEqual(overhang);
+  });
+
+  it("has a path back to the library", () => {
     readFull();
     const nav = screen.getByRole("navigation", { name: "Đường dẫn" });
-    expect(within(nav).getByRole("link", { name: "Bài viết" })).toHaveAttribute(
-      "href",
-      "/articles",
-    );
+    expect(
+      within(nav).getByRole("link", { name: "Thư viện kiến thức" }),
+    ).toHaveAttribute("href", "/learn");
     expect(within(nav).getByText("Hello world")).toHaveAttribute(
       "aria-current",
       "page",

@@ -1,17 +1,12 @@
-import { ArrowRight, Newspaper } from "lucide-react";
-import { LinkButton, Text } from "@/design-system";
+import { Newspaper } from "lucide-react";
+import { Text } from "@/design-system";
 
 export interface LatestArticlesHeaderProps {
   titleId: string;
-  /** Where "Xem tất cả bài viết" leads. */
-  href?: string;
 }
 
-/** The icon, the title and subtitle, and the link to every article. */
-export function LatestArticlesHeader({
-  titleId,
-  href = "/articles",
-}: LatestArticlesHeaderProps) {
+/** The icon, the title and subtitle. */
+export function LatestArticlesHeader({ titleId }: LatestArticlesHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div className="flex min-w-0 items-center gap-3">
@@ -33,9 +28,6 @@ export function LatestArticlesHeader({
           </Text>
         </div>
       </div>
-      <LinkButton href={href} variant="outline" rightIcon={ArrowRight}>
-        Xem tất cả bài viết
-      </LinkButton>
     </div>
   );
 }

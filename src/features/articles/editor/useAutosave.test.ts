@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { vi } from "vitest";
+import { AUTOSAVE_DELAY_MS } from "./autosaveDelay";
 import { useAutosave } from "./useAutosave";
 
 beforeEach(() => vi.useFakeTimers());
@@ -99,5 +100,52 @@ describe("useAutosave", () => {
     const event = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
+  });
+});
+
+describe("the draft is saved once the writer has stopped for 5 seconds", () => {
+  it("waits 5 seconds of quiet", () => {
+    expect(AUTOSAVE_DELAY_MS).toBe(5000);
+  });
+
+  it("does not save while the writer keeps going, and saves once after the pause", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value }) => useAutosave({ value, save, delay: AUTOSAVE_DELAY_MS }),
+      { initialProps: { value: "" } },
+    );
+
+    // typing with pauses shorter than 5 seconds: each change restarts the count
+    for (const text of ["H", "He", "Hel", "Hell", "Hello"]) {
+      rerender({ value: text });
+      await act(async () => vi.advanceTimersByTimeAsync(4000));
+    }
+    expect(save).not.toHaveBeenCalled();
+
+    // stopped: one second more makes it 5 seconds since the last change
+    await act(async () => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("Hello");
+
+    // nothing changed since, so waiting longer does not save again
+    await act(async () => vi.advanceTimersByTimeAsync(30000));
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves again after the next pause, only when something changed", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value }) => useAutosave({ value, save, delay: AUTOSAVE_DELAY_MS }),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "ab" });
+    await act(async () => vi.advanceTimersByTimeAsync(5000));
+    expect(save).toHaveBeenCalledTimes(1);
+    rerender({ value: "abc" });
+    await act(async () => vi.advanceTimersByTimeAsync(4999));
+    expect(save).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTimeAsync(1));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("abc");
   });
 });

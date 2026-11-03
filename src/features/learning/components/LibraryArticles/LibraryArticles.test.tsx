@@ -58,8 +58,8 @@ describe("LibraryArticles", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Xem tất cả bài viết" }),
-    ).toHaveAttribute("href", "/articles");
+      screen.queryByRole("link", { name: "Xem tất cả bài viết" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows on each card the title, summary, author, date and reading time", () => {

@@ -65,7 +65,10 @@ describe("LearnPhase keeps the learner's place", () => {
     const logs = JSON.parse(
       localStorage.getItem("pp.english-diary.logs") ?? "[]",
     );
-    expect(logs.at(-1).notes).toContain("• luggage: túi");
+    expect(logs.at(-1).dailyEnglish.words[0]).toMatchObject({
+      word: "luggage",
+      note: "túi",
+    });
     expect(
       await screen.findByRole("link", { name: "Xem trong English Logs" }),
     ).toHaveAttribute("href", "/goals/english/diary");

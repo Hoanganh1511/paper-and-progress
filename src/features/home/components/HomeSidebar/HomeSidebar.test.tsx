@@ -28,13 +28,13 @@ describe("HomeSidebar", () => {
       "/goals/english/diary",
       "/goals/tech",
       "/learn",
-      "/paths",
+      "/certificates",
     ]);
     expect(links[0]).toHaveTextContent("English Diary");
     expect(links[1]).toHaveTextContent("English Logs");
     expect(links[2]).toHaveTextContent("Công nghệ thông tin");
     expect(links[3]).toHaveTextContent("Học tập");
-    expect(links[4]).toHaveTextContent("Lộ trình học");
+    expect(links[4]).toHaveTextContent("Chứng chỉ");
   });
 
   it("sorts the buttons under Ngôn ngữ, Công nghệ and Bắt đầu", () => {
@@ -55,7 +55,7 @@ describe("HomeSidebar", () => {
         [/English Logs/, "Daily practice"],
         [/Công nghệ thông tin/, "Technology"],
         [/Học tập/, "Learning space"],
-        [/Lộ trình học/, "Learning paths"],
+        [/Chứng chỉ/, "Certificates"],
       ] as const) {
         const link = screen.getByRole("link", { name });
         const line = within(link).getByText(subtitle);
@@ -106,7 +106,7 @@ describe("HomeSidebar", () => {
         "/goals/english/diary",
         "/goals/tech",
         "/learn",
-        "/paths",
+        "/certificates",
       ]) {
         const link = document.querySelector(`a[href="${href}"]`)!;
         const icons = link.querySelectorAll("svg");

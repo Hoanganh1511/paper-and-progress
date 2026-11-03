@@ -7,7 +7,7 @@ export default function Loading() {
       className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--app-header-height,4rem)-5rem)] lg:overflow-hidden"
     >
       <span role="status" className="sr-only">
-        Đang tải English Diary
+        Đang tải English Logs
       </span>
       <Skeleton className="h-7 w-40" />
       <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[5fr_7fr]">

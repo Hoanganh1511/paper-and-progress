@@ -1,9 +1,9 @@
 import {
+  Award,
   BookMarked,
   BookOpenText,
   GraduationCap,
   Laptop,
-  Route,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -203,12 +203,12 @@ export function HomeSidebar({
                 <span className="sr-only">(Bắt đầu học từ đây)</span>
               </ExploreLink>
               <ExploreLink
-                href="/paths"
-                icon={<ExploreIcon icon={Route} />}
-                tone="bg-accent-blue"
-                subtitle="Learning paths"
+                href="/certificates"
+                icon={<ExploreIcon icon={Award} />}
+                tone=""
+                subtitle="Certificates"
               >
-                Lộ trình học
+                Chứng chỉ
               </ExploreLink>
             </li>
           </ul>

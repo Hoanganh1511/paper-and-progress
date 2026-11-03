@@ -17,7 +17,7 @@ export default function SavedArticlesPage() {
             description="Những bài bạn đã bấm “Lưu bài” để đọc sau."
             breadcrumbs={[
               { label: "Trang chủ", href: "/" },
-              { label: "Bài viết", href: "/articles" },
+              { label: "Thư viện kiến thức", href: "/learn" },
               { label: "Đã lưu" },
             ]}
             breadcrumbsProps={{ label: "Đường dẫn" }}

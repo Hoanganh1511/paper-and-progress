@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight, Newspaper } from "lucide-react";
-import { Alert, LinkButton, Text } from "@/design-system";
+import { Newspaper } from "lucide-react";
+import { Alert, Text } from "@/design-system";
 import type { ArticleCardData } from "@/features/articles";
 import { useIsMember } from "@/features/membership";
 import { LibraryArticleCard } from "./LibraryArticleCard";
@@ -9,18 +9,12 @@ import { LibraryArticleCard } from "./LibraryArticleCard";
 export interface LibraryArticlesProps {
   /** The newest published articles; `null` when they could not be loaded. */
   articles: ArticleCardData[] | null;
-  /** Where "Xem tất cả bài viết" leads: the full list, with its filters. */
-  href?: string;
 }
 
 /**
- * The "Bài viết" tab of the knowledge library: a header with the way to every
- * article, and the newest three as cards. A failed read stays inside this tab.
+ * The "Bài viết" tab of the knowledge library: a header and the newest three as cards. A failed read stays inside this tab.
  */
-export function LibraryArticles({
-  articles,
-  href = "/articles",
-}: LibraryArticlesProps) {
+export function LibraryArticles({ articles }: LibraryArticlesProps) {
   const isMember = useIsMember();
   return (
     <section
@@ -47,14 +41,6 @@ export function LibraryArticles({
             </Text>
           </div>
         </div>
-        <LinkButton
-          href={href}
-          variant="outline"
-          rightIcon={ArrowRight}
-          className="max-sm:w-full"
-        >
-          Xem tất cả bài viết
-        </LinkButton>
       </div>
       {articles === null ? (
         <Alert variant="danger">Không tải được các bài viết.</Alert>

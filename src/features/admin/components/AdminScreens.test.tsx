@@ -115,7 +115,7 @@ beforeEach(() => {
 });
 
 describe("AdminShell", () => {
-  it("lists the six sections and marks the current one", () => {
+  it("lists the seven sections and marks the current one", () => {
     render(<AdminShell>body</AdminShell>);
     const nav = screen.getByRole("navigation", { name: "Admin" });
     expect(
@@ -126,6 +126,7 @@ describe("AdminShell", () => {
       "Overview",
       "Users",
       "Articles",
+      "Vocabulary",
       "Membership",
       "Login History",
       "Security Events",
