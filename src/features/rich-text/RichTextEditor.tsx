@@ -305,7 +305,7 @@ function Toolbar({ editor, extras }: { editor: Editor; extras?: ReactNode }) {
     <div
       role="toolbar"
       aria-label="Định dạng văn bản"
-      className="border-b-2 border-border-strong bg-surface-sunken p-1"
+      className="sticky top-[var(--app-header-height,0px)] z-10 border-b-2 border-border-strong bg-surface-sunken p-1"
     >
       <div className="flex flex-wrap items-center">
         {groups.map((group, index) => (
@@ -416,7 +416,8 @@ export function RichTextEditor({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-standard border-2 border-border-strong bg-surface-card focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-solid focus-within:outline-border-focus",
+        // overflow-clip, not hidden: hidden would stop the toolbar sticking while you scroll.
+        "overflow-clip rounded-standard border-2 border-border-strong bg-surface-card focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-solid focus-within:outline-border-focus",
         className,
       )}
     >

@@ -32,6 +32,9 @@ export function groupToc(items: TocItem[]): TocSection[] {
   return sections;
 }
 
+/** Distance from the top of the viewport (below the sticky header) where a heading counts as reached. */
+const READING_LINE = 120;
+
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus";
 
@@ -66,12 +69,13 @@ function TocBody({
           className="absolute top-5 bottom-5 left-[1.125rem] w-0.5 bg-border-strong"
         />
         {sections.map(({ heading }) => {
-          const isActive = heading.id === activeId;
+          // The section stays marked while the reader is on one of its h3s.
+          const isActive = heading === current.heading && found !== -1;
           return (
             <li key={heading.id} className="relative">
               <a
                 href={`#${heading.id}`}
-                aria-current={isActive ? "location" : undefined}
+                aria-current={heading.id === activeId ? "location" : undefined}
                 className={cn(
                   "flex min-h-10 items-center gap-3 rounded-standard py-1.5 pr-3 pl-2 text-body-sm font-semibold transition-colors motion-reduce:transition-none",
                   focusRing,
@@ -186,15 +190,36 @@ export function TableOfContents({ items }: TableOfContentsProps) {
     const headings = items
       .map((item) => document.getElementById(item.id))
       .filter((element): element is HTMLElement => element !== null);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.find((entry) => entry.isIntersecting);
-        if (visible) setActiveId(visible.target.id);
-      },
-      { rootMargin: "-80px 0px -70% 0px" },
-    );
-    headings.forEach((heading) => observer.observe(heading));
-    return () => observer.disconnect();
+    // The heading being read is the last one whose top has passed the reading
+    // line. Unlike an IntersectionObserver (which only fires as a heading
+    // crosses a band), this stays right in the middle of a long section and
+    // when scrolling back up.
+    const update = () => {
+      let current: string | undefined;
+      for (const heading of headings) {
+        if (heading.getBoundingClientRect().top <= READING_LINE) {
+          current = heading.id;
+        } else {
+          break;
+        }
+      }
+      const root = document.documentElement;
+      const isAtBottom =
+        root.scrollHeight > window.innerHeight &&
+        window.innerHeight + window.scrollY >= root.scrollHeight - 2;
+      // A short last section never reaches the line: the end of the page counts.
+      if (isAtBottom && headings.length > 0) {
+        current = headings[headings.length - 1].id;
+      }
+      setActiveId(current);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [items]);
 
   if (items.length === 0) return null;

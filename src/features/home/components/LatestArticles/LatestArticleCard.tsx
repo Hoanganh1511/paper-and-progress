@@ -126,6 +126,18 @@ export function LatestArticleCard({
           {article.title}
         </Link>
       </Text>
+      {article.excerpt && (
+        // The card has a fixed height: with tag chips there is room for one line only.
+        <Text
+          size="body-sm"
+          className={cn(
+            "text-ink/80",
+            extraTags.length > 0 ? "line-clamp-1" : "line-clamp-2",
+          )}
+        >
+          {article.excerpt}
+        </Text>
+      )}
       {extraTags.length > 0 && (
         <ul className="flex h-6 gap-1.5 overflow-hidden" aria-label="Chủ đề">
           {extraTags.map((tag) => (

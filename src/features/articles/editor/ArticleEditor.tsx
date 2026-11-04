@@ -40,6 +40,7 @@ import {
   type EditableArticle,
 } from "../types";
 import { articleExtensions, articleStarterKit } from "./extensions";
+import { CollapsibleBox } from "./CollapsibleBox";
 import { imageFilesOf, insertImages } from "./imageInsert";
 import { RevisionPanel } from "./RevisionPanel";
 import {
@@ -398,19 +399,19 @@ export function ArticleEditor({
         </div>
       </div>
 
-      <aside className="flex flex-col gap-4">
-        <section
-          aria-label="Đăng bài"
-          className="flex flex-col gap-3 rounded-standard border-2 border-border-strong bg-surface-card p-4 shadow-raised"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Follows the screen while the text scrolls; a long column scrolls on its own. The padding keeps the hard shadows from being cut. */}
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-height,0px)+1.5rem)] lg:max-h-[calc(100dvh-var(--app-header-height,0px)-3rem)] lg:self-start lg:overflow-y-auto lg:pr-1 lg:pb-1">
+        <CollapsibleBox
+          title="Đăng bài"
+          headerExtra={
             <Badge variant={isLive ? "lime" : "default"}>
               {STATUS_LABELS[status]}
             </Badge>
-            <Text size="body-sm" role="status" color="secondary">
-              {statusText}
-            </Text>
-          </div>
+          }
+        >
+          <Text size="body-sm" role="status" color="secondary">
+            {statusText}
+          </Text>
           {autosave.status === "error" && autosave.error && (
             <Alert variant="danger">
               {autosave.error}{" "}
@@ -513,12 +514,9 @@ export function ArticleEditor({
               Lịch sử phiên bản
             </Button>
           )}
-        </section>
+        </CollapsibleBox>
 
-        <section
-          aria-label="Chi tiết bài viết"
-          className="flex flex-col gap-4 rounded-standard border-2 border-border-strong bg-surface-card p-4 shadow-raised"
-        >
+        <CollapsibleBox title="Chi tiết bài viết">
           <FormField
             label="Đường dẫn (slug)"
             description={
@@ -618,7 +616,7 @@ export function ArticleEditor({
               />
             </FormField>
           )}
-        </section>
+        </CollapsibleBox>
       </aside>
 
       {articleId && (

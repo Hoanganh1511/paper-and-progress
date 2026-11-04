@@ -36,12 +36,12 @@ export function RevisionDiff({ before, after }: RevisionDiffProps) {
   return (
     <ul
       aria-label="Thay đổi"
-      className="flex flex-col gap-1 font-mono text-body-sm"
+      className="flex flex-col gap-2 font-mono text-body-md"
     >
       {parts.map((part, index) => {
         if (!part.added && !part.removed) {
           return (
-            <li key={index} className="px-2 text-text-secondary">
+            <li key={index} className="px-3 text-text-secondary">
               {part.value.trim().length > 90
                 ? `${part.value.trim().slice(0, 90)}…`
                 : part.value.trim()}
@@ -53,7 +53,7 @@ export function RevisionDiff({ before, after }: RevisionDiffProps) {
           <li
             key={index}
             className={cn(
-              "flex items-start gap-1 rounded-sharp px-2 py-1 break-words whitespace-pre-wrap",
+              "flex items-start gap-2 rounded-sharp px-3 py-2 break-words whitespace-pre-wrap",
               part.added
                 ? "bg-success-bg text-success-text"
                 : "bg-danger-bg text-danger-text line-through",
@@ -124,9 +124,10 @@ export function RevisionPanel({
         title="Lịch sử phiên bản"
         closeLabel="Đóng"
         side="right"
-        className="w-full max-w-lg"
+        // The drawer gives its content no padding and is only 20rem wide by default: too tight for a diff.
+        className="w-full sm:w-[40rem] lg:w-[48rem]"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6 p-5 sm:p-6">
           {error && <Alert variant="danger">{error}</Alert>}
           {revisions.error && !revisions.data ? (
             <Alert variant="danger">{revisions.error.message}</Alert>
@@ -135,7 +136,7 @@ export function RevisionPanel({
           ) : revisions.data.length === 0 ? (
             <Text color="secondary">Chưa có phiên bản nào.</Text>
           ) : (
-            <ul className="flex flex-col gap-1" aria-label="Các phiên bản">
+            <ul className="flex flex-col gap-2" aria-label="Các phiên bản">
               {revisions.data.map((revision) => (
                 <li key={revision.id}>
                   <button
@@ -143,7 +144,7 @@ export function RevisionPanel({
                     aria-pressed={selected?.id === revision.id}
                     onClick={() => setSelected(revision)}
                     className={cn(
-                      "flex min-h-11 w-full flex-col items-start rounded-standard border-2 border-border-strong px-3 py-2 text-left hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus",
+                      "flex min-h-11 w-full flex-col items-start gap-0.5 rounded-standard border-2 border-border-strong px-4 py-3 text-left hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus",
                       selected?.id === revision.id &&
                         "bg-accent-lime text-ink hover:bg-accent-lime",
                     )}
@@ -161,7 +162,10 @@ export function RevisionPanel({
           )}
 
           {selected && (
-            <section aria-label="So sánh" className="flex flex-col gap-3">
+            <section
+              aria-label="So sánh"
+              className="flex flex-col gap-4 border-t-2 border-border-strong pt-6"
+            >
               <Text as="h3" size="body-md" weight="bold">
                 Từ bản {formatStamp(selected.createdAt)} đến bản đang viết
               </Text>

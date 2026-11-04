@@ -1,6 +1,5 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
-import { vi } from "vitest";
 import { TableOfContents, groupToc } from "./TableOfContents";
 
 expect.extend(toHaveNoViolations);
@@ -13,26 +12,31 @@ const items = [
   { id: "prize", text: "Prize Categories", level: 2 as const },
 ];
 
-/** Lets a test say which heading the reader has reached. */
-let reach: (id: string) => void = () => undefined;
-class FakeObserver {
-  constructor(private callback: IntersectionObserverCallback) {
-    reach = (id) =>
-      this.callback(
-        [{ isIntersecting: true, target: { id } } as IntersectionObserverEntry],
-        this as unknown as IntersectionObserver,
-      );
-  }
-  observe() {}
-  disconnect() {}
-  unobserve() {}
+/**
+ * Lets a test say which heading the reader has reached: headings are put in
+ * the page, and those up to the given one have scrolled past the reading line.
+ */
+let reachedIndex = -1;
+function mountHeadings() {
+  items.forEach((item, index) => {
+    const el = document.createElement("h2");
+    el.id = item.id;
+    el.getBoundingClientRect = () =>
+      ({ top: index <= reachedIndex ? -10 : 900 }) as DOMRect;
+    document.body.appendChild(el);
+  });
+}
+function reach(id: string) {
+  reachedIndex = items.findIndex((item) => item.id === id);
+  window.dispatchEvent(new Event("scroll"));
 }
 
 beforeEach(() => {
-  vi.stubGlobal("IntersectionObserver", FakeObserver);
+  reachedIndex = -1;
+  mountHeadings();
 });
 afterEach(() => {
-  vi.unstubAllGlobals();
+  document.body.innerHTML = "";
 });
 
 const desktop = (container: HTMLElement) =>
@@ -99,6 +103,23 @@ describe("TableOfContents", () => {
     });
     expect(current).toHaveAttribute("aria-current", "location");
     expect(current).toHaveClass("bg-accent-lime");
+  });
+
+  it("keeps the section marked, and the active h3 current, while reading an h3", () => {
+    const { container } = render(<TableOfContents items={items} />);
+    act(() => reach("gemma"));
+    const open = desktop(container);
+    const dot = within(open).getAllByRole("link", { name: "How I Built It" })[0];
+    expect(dot).toHaveClass("bg-accent-lime");
+  });
+
+  it("goes back to the earlier heading when scrolling up", () => {
+    const { container } = render(<TableOfContents items={items} />);
+    act(() => reach("prize"));
+    act(() => reach("built"));
+    expect(
+      within(desktop(container)).getByRole("link", { name: "How I Built It" }),
+    ).toHaveAttribute("aria-current", "location");
   });
 
   it("shows the h3 headings of the section being read as numbered rows, and the next section as a lime button", () => {
