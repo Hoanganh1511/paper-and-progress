@@ -1,130 +1,215 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CarouselControls } from "./CarouselControls";
-import { SeriesCard } from "./SeriesCard";
-import { chunk, poseOf, slotsFor, toneOfIndex } from "./carouselLayout";
+import {
+  useRef,
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { cn } from "@/design-system";
+import { SeriesCard, toneOfIndex } from "@/features/study-lists";
+import { CarouselArrow, CarouselDots } from "./CarouselControls";
+import {
+  cardHeightOf,
+  cardWidthOf,
+  modeOf,
+  offsetOf,
+  poseOf,
+  radiusOf,
+} from "./carouselLayout";
+import { useElementWidth, useSeriesCarousel } from "./useSeriesCarousel";
 import type { SeriesShowcase } from "./types";
 
-/** Wide enough for three cards side by side. */
-const THREE_UP_MIN = 1000;
-/** Wide enough for two cards; below it one card fills the slide. */
-const TWO_UP_MIN = 600;
-/** Below this the tilt is softened. */
-const FULL_TILT_MIN = 1100;
+/** A drag or a swipe this long (and mostly sideways) moves to the next or the previous series. */
 const SWIPE_PX = 60;
-/** A change of slide is an exit and an entrance, so each takes half of ~500ms. */
-const LEG_SECONDS = 0.25;
-
-/**
- * The width of the element, so the number of cards follows the room the module
- * has and not the screen. It starts wide, so the server and the first paint
- * agree on three cards.
- */
-function useWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(FULL_TILT_MIN);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => {
-      setWidth(entry.contentRect.width);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return { ref, width };
-}
+const EASE = [0.22, 1, 0.36, 1] as const;
+const MOVE_SECONDS = 0.65;
 
 export interface SeriesCarouselProps {
   series: SeriesShowcase[];
 }
 
 /**
- * The series cards in slides of three (two, or one, when the module is
- * narrow). All the cards of a slide change together. Next and previous wrap
- * round; the dots jump to a slide; on a one-card slide the card can be swiped.
+ * The series as cards standing in one 3D space: the active one in front and
+ * whole, the next ones behind it, smaller, turned and partly hidden. Which
+ * series is where follows from `active` alone. A card behind can be clicked to
+ * bring it forward; the arrows, the dots, the arrow keys, a drag and a swipe
+ * do the same. A card behind is inert, so only the front card's links can be
+ * reached, and a drag never opens a lesson.
  */
 export function SeriesCarousel({ series }: SeriesCarouselProps) {
-  const { ref, width } = useWidth();
+  const { ref, width } = useElementWidth<HTMLDivElement>();
   const isReduced = useReducedMotion();
-  const perSlide = width >= THREE_UP_MIN ? 3 : width >= TWO_UP_MIN ? 2 : 1;
-  const isCompact = width < FULL_TILT_MIN;
-  const slides = chunk(series, perSlide);
-  const [requested, setRequested] = useState(0);
-  const [direction, setDirection] = useState(1);
-  // The number of slides can shrink when the module is resized.
-  const current = Math.min(requested, slides.length - 1);
+  const { active, goTo, next, previous } = useSeriesCarousel(series.length);
+  const mode = modeOf(width);
+  const cardWidth = cardWidthOf(width);
+  const cardHeight = cardHeightOf(mode);
+  const radius = radiusOf(mode);
+  const hasMany = series.length > 1;
 
-  function go(next: number, by: number) {
-    setDirection(by);
-    setRequested((next + slides.length) % slides.length);
+  const drag = useRef<{ x: number; y: number } | undefined>(undefined);
+  const wasDragged = useRef(false);
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    drag.current = { x: event.clientX, y: event.clientY };
   }
-  const previous = () => go(current - 1, -1);
-  const next = () => go(current + 1, 1);
-
-  const slide = slides[current];
-  const slots = slotsFor(slide.length);
-  const leg = isReduced ? 0 : LEG_SECONDS;
+  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
+    const start = drag.current;
+    drag.current = undefined;
+    if (!start || !hasMany) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    // The click that follows the release is not a choice of a lesson.
+    wasDragged.current = true;
+    setTimeout(() => {
+      wasDragged.current = false;
+    }, 0);
+    if (dx < 0) next();
+    else previous();
+  }
+  function handleClickCapture(event: MouseEvent<HTMLDivElement>) {
+    if (!wasDragged.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!hasMany || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      next();
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      previous();
+    }
+  }
 
   return (
     <div
       ref={ref}
       role="group"
       aria-roledescription="carousel"
-      aria-label="Series nổi bật"
-      className="flex flex-col gap-3"
+      aria-label="Series mới nhất"
+      onKeyDown={handleKeyDown}
+      className="relative flex flex-col gap-2"
     >
-      <div className="flex min-h-[28rem] items-center justify-center overflow-hidden">
-        <AnimatePresence mode="wait" initial={false} custom={direction}>
-          <motion.div
-            key={`${perSlide}-${current}`}
-            custom={direction}
-            variants={{
-              enter: (by: number) => ({ opacity: 0, x: by * 80 }),
-              center: { opacity: 1, x: 0 },
-              exit: (by: number) => ({ opacity: 0, x: by * -80 }),
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: leg, ease: "easeInOut" }}
-            drag={perSlide === 1 && slides.length > 1 ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={(_, info) => {
-              if (info.offset.x <= -SWIPE_PX) next();
-              else if (info.offset.x >= SWIPE_PX) previous();
-            }}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${current + 1} trên ${slides.length}`}
-            className="flex items-center justify-center -space-x-12 px-4 xl:-space-x-28 pt-6 pb-8"
-          >
-            {slide.map((item, index) => (
-              <SeriesCard
+      <div className="relative overflow-hidden">
+        {hasMany && mode !== "narrow" && (
+          <>
+            <CarouselArrow
+              direction="previous"
+              onClick={previous}
+              className="absolute top-1/2 left-1 z-40 -mt-[22px]"
+            />
+            <CarouselArrow
+              direction="next"
+              onClick={next}
+              className="absolute top-1/2 right-1 z-40 -mt-[22px]"
+            />
+          </>
+        )}
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => {
+            drag.current = undefined;
+          }}
+          onClickCapture={handleClickCapture}
+          // A link dragged by the browser would cancel the drag of the cards.
+          onDragStart={(event) => event.preventDefault()}
+          style={{ height: cardHeight + 64 }}
+          className="relative touch-pan-y select-none [perspective-origin:50%_45%] [perspective:1400px]"
+        >
+          {series.map((item, index) => {
+            const offset = offsetOf(index, active, series.length);
+            const pose = poseOf(offset, cardWidth, mode);
+            const isActive = offset === 0;
+            const isVisible = Math.abs(offset) <= radius;
+            return (
+              <motion.div
                 key={item.id}
-                series={item}
-                tone={toneOfIndex(current * perSlide + index)}
-                pose={poseOf(slots[index], isCompact)}
-              />
-            ))}
-          </motion.div>
-        </AnimatePresence>
+                initial={false}
+                animate={{
+                  x: pose.x,
+                  y: pose.y,
+                  z: pose.z,
+                  scale: pose.scale,
+                  rotateY: pose.rotateY,
+                  rotateZ: pose.rotateZ,
+                  opacity: pose.opacity,
+                }}
+                whileHover={
+                  isReduced || isActive || !isVisible
+                    ? undefined
+                    : { y: pose.y - 8, transition: { duration: 0.2 } }
+                }
+                transition={{
+                  duration: isReduced ? 0 : MOVE_SECONDS,
+                  ease: EASE,
+                }}
+                // The card's own centre is the stage's: the width is set, and half of it pulled back.
+                style={{
+                  width: cardWidth,
+                  height: cardHeight,
+                  marginLeft: -cardWidth / 2,
+                  marginTop: -cardHeight / 2,
+                  zIndex: pose.zIndex,
+                  pointerEvents: isVisible ? "auto" : "none",
+                }}
+                aria-hidden={isVisible ? undefined : true}
+                className="absolute top-1/2 left-1/2"
+              >
+                {/* Only the front card's links can be reached; the others are chosen as a whole. */}
+                <div inert={!isActive} className="h-full w-full">
+                  <SeriesCard
+                    series={item}
+                    tone={toneOfIndex(index)}
+                    variant={isActive ? "full" : "compact"}
+                    showCertificates={false}
+                    className={cn(
+                      "h-full w-full",
+                      !isActive && "brightness-95",
+                    )}
+                  />
+                </div>
+                {isVisible && !isActive && (
+                  <button
+                    type="button"
+                    aria-label={`Xem series ${item.title}`}
+                    onClick={() => goTo(index)}
+                    className="absolute inset-0 z-10 cursor-pointer rounded-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus"
+                  />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
       <p role="status" className="sr-only">
-        {slides.length > 1
-          ? `Nhóm series ${current + 1} trên ${slides.length}`
+        {hasMany
+          ? `Series ${active + 1} trên ${series.length}: ${series[active].title}`
           : ""}
       </p>
-      <CarouselControls
-        count={slides.length}
-        current={current}
-        onPrevious={previous}
-        onNext={next}
-        onSelect={(index) => go(index, index > current ? 1 : -1)}
-      />
+      {mode === "narrow" ? (
+        hasMany && (
+          <div className="flex items-center justify-center gap-4">
+            <CarouselArrow direction="previous" onClick={previous} />
+            <span className="min-w-16 text-center font-display text-body-lg font-bold text-text-primary">
+              {active + 1} / {series.length}
+            </span>
+            <CarouselArrow direction="next" onClick={next} />
+          </div>
+        )
+      ) : (
+        <div className="relative flex items-center justify-center">
+          <CarouselDots
+            count={series.length}
+            current={active}
+            onSelect={goTo}
+          />
+        </div>
+      )}
     </div>
   );
 }

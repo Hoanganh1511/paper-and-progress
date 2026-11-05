@@ -31,7 +31,7 @@ async function LearnContent({
   return (
     <LearningHub
       domains={domains}
-      // `/learn?tab=techstack` opens on the Techstack tab, `?tab=lists` on Danh sách học.
+      // `/learn?tab=techstack` opens on the Techstack tab, `?tab=lists` on Series học.
       defaultTab={tab === "techstack" || tab === "lists" ? tab : "articles"}
       // The learner's own lists load in the browser, with their sign-in.
       studyLists={<StudyListsTab />}

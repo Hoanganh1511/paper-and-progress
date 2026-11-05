@@ -18,7 +18,7 @@ export interface LearningHubProps extends Omit<
    * and "Techstack" (the domains). Without it the domains are shown on their own.
    */
   articles?: ReactNode;
-  /** The learner's own study lists: a third folder tab, "Danh sách học". */
+  /** The learner's own study lists: a third folder tab, "Series học". */
   studyLists?: ReactNode;
   /** The tab shown first. */
   defaultTab?: LibraryTab;
@@ -88,7 +88,7 @@ export function LearningHub({
           {studyLists && (
             <TabTrigger value="lists">
               <ListChecks aria-hidden="true" size={20} className="shrink-0" />
-              Danh sách học
+              Series học
             </TabTrigger>
           )}
         </TabList>

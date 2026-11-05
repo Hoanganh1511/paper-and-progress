@@ -18,6 +18,7 @@ vi.mock("@/features/auth", () => ({
 
 const api = vi.hoisted(() => ({
   listStudyLists: vi.fn(),
+  getStudyList: vi.fn(),
   searchStudyArticles: vi.fn(),
   createStudyList: vi.fn(),
   addSection: vi.fn(),
@@ -51,14 +52,42 @@ const summary = (over: Partial<StudyListSummary> = {}): StudyListSummary => ({
   ...over,
 });
 
+/** The list as the series card reads it: its first lesson, a step that is not an article. */
+const cardDetail = (over: Partial<StudyListSummary> = {}): StudyListDetail => ({
+  ...summary(over),
+  createdAt: "2026-11-01T00:00:00Z",
+  sections: [
+    {
+      id: "s1",
+      title: "Fundamentals",
+      description: null,
+      steps: [
+        {
+          id: "t1",
+          title: "Read the guide",
+          note: null,
+          url: null,
+          isDone: true,
+          doneAt: null,
+          article: null,
+        },
+      ],
+    },
+  ],
+});
+
 describe("StudyListsTab", () => {
-  it("lists the study lists with progress and the certificates that use them", async () => {
+  it("shows each study list as a series card with its lessons and the certificates that use it", async () => {
     api.listStudyLists.mockResolvedValue([summary()]);
+    api.getStudyList.mockResolvedValue(cardDetail());
     const { container } = render(<StudyListsTab />);
     expect(
       await screen.findByRole("link", { name: "Ôn thi AWS" }),
     ).toHaveAttribute("href", "/study-lists/l1");
-    expect(screen.getByText("2 chương · 4 bài")).toBeInTheDocument();
+    expect(screen.getByText("4 bài")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Read the guide" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "AWS SAA" })).toHaveAttribute(
       "href",
@@ -108,6 +137,7 @@ describe("StudyListsTab", () => {
   it("shows a failed load with a retry", async () => {
     api.listStudyLists.mockRejectedValueOnce(new Error("Máy chủ bận"));
     api.listStudyLists.mockResolvedValue([summary()]);
+    api.getStudyList.mockResolvedValue(cardDetail());
     render(<StudyListsTab />);
     expect(await screen.findByText("Máy chủ bận")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
@@ -217,6 +247,7 @@ describe("StudyPlan", () => {
     title: "Học React từ đầu",
     status: "PUBLISHED" as const,
     readingMinutes: 7,
+    publishedAt: "2026-11-03T08:00:00Z",
     ...over,
   });
   const withArticles = (...articles: ReturnType<typeof article>[]) =>

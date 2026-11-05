@@ -2,7 +2,6 @@
 
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
 import { Alert, Button, Card, Text, cn } from "@/design-system";
 import { Mascot } from "@/features/english";
 import { LatestArticlesHeader } from "./LatestArticlesHeader";
@@ -41,16 +40,11 @@ export function LatestArticles({
       aria-labelledby={titleId}
       lang="vi"
       className={cn(
-        "relative gap-4 overflow-hidden rounded-soft bg-[linear-gradient(135deg,#5a3d2e,#35241c)] text-white shadow-modal",
+        "relative gap-4 overflow-hidden rounded-soft bg-surface-card shadow-modal",
         className,
       )}
       {...props}
     >
-      <Sparkles
-        aria-hidden="true"
-        size={28}
-        className="pointer-events-none absolute top-8 right-[18%] text-accent-yellow"
-      />
       <div className="relative flex flex-col gap-4">
         <LatestArticlesHeader titleId={titleId} />
         {series === null ? (
@@ -64,9 +58,7 @@ export function LatestArticles({
           <div className="flex min-h-[24rem] flex-col items-center justify-center gap-3 text-center">
             <Mascot accessory="book" aria-hidden="true" className="size-24" />
             {emptyContent ?? (
-              <Text className="text-white">
-                Chưa có series nào. Hãy quay lại sau nhé!
-              </Text>
+              <Text>Chưa có series nào. Hãy quay lại sau nhé!</Text>
             )}
           </div>
         ) : (

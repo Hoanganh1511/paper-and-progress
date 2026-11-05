@@ -24,7 +24,7 @@ export function LatestArticlesSkeleton({
       aria-busy="true"
       lang="vi"
       className={cn(
-        "gap-4 rounded-soft bg-[linear-gradient(135deg,#5a3d2e,#35241c)] text-white shadow-modal",
+        "gap-4 rounded-soft bg-surface-card shadow-modal",
         className,
       )}
       {...props}
@@ -38,7 +38,7 @@ export function LatestArticlesSkeleton({
           <Skeleton
             key={index}
             className={cn(
-              "h-[24rem] w-72 bg-white/15 sm:w-96 xl:w-[26rem]",
+              "h-[24rem] w-72 sm:w-96 xl:w-[26rem]",
               index > 0 && "max-md:hidden",
             )}
           />

@@ -18,12 +18,15 @@ const series = (n: number, stepCount = 3): SeriesShowcase => ({
   description: `Mô tả series ${n}`,
   sectionCount: 2,
   stepCount,
+  doneStepCount: 0,
+  certificates: [],
   steps: [
     {
       id: `${n}a`,
       title: `Bài ${n}.1`,
       href: `/articles/bai-${n}a`,
       minutes: 7,
+      publishedAt: "2026-11-03T08:00:00Z",
       isDone: true,
     },
     {
@@ -31,6 +34,7 @@ const series = (n: number, stepCount = 3): SeriesShowcase => ({
       title: `Bài ${n}.2`,
       href: `/articles/bai-${n}b`,
       minutes: 5,
+      publishedAt: "2026-11-04T08:00:00Z",
       isDone: false,
     },
     {
@@ -38,6 +42,7 @@ const series = (n: number, stepCount = 3): SeriesShowcase => ({
       title: `Bài ${n}.3`,
       href: `/study-lists/s${n}`,
       minutes: null,
+      publishedAt: null,
       isDone: false,
     },
   ],
@@ -56,23 +61,32 @@ describe("LatestArticles", () => {
   it("has a header with the title and what the module shows", () => {
     render(<LatestArticles series={four} />);
     expect(
-      screen.getByRole("heading", { level: 2, name: "Bài viết mới nhất" }),
+      screen.getByRole("heading", { level: 2, name: "Hoạt động gần đây" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/mỗi series kèm 3 bài đầu tiên/)).toBeVisible();
+    expect(
+      screen.queryByText("Khám phá các series mới nhất"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Vuốt để khám phá/)).not.toBeInTheDocument();
   });
 
-  it("shows the first three series, each with its name, size and link", () => {
+  it("puts the newest series in front, whole, and the next ones behind it", () => {
     render(<LatestArticles series={four} />);
     expect(titlesShown()).toEqual([
       "Series số 1",
       "Series số 2",
       "Series số 3",
+      "Series số 4",
     ]);
     expect(screen.getByRole("link", { name: "Series số 1" })).toHaveAttribute(
       "href",
       "/study-lists/s1",
     );
-    expect(screen.getAllByText("3 bài")).toHaveLength(3);
+    // the front card has its lessons with date and reading time; the others only titles
+    const front = screen.getByRole("list", {
+      name: "Các bài của series Series số 1",
+    });
+    expect(front).toHaveTextContent("7 phút đọc");
+    expect(front).toHaveTextContent("03/11/2026");
   });
 
   it("lists a series' first three lessons in order, with reading time and what is done", () => {
@@ -96,34 +110,75 @@ describe("LatestArticles", () => {
     expect(items[2]).toHaveTextContent("Bài 1.3");
   });
 
+  it("makes the cards behind inert and chooses them as a whole", () => {
+    render(<LatestArticles series={four} />);
+    const behind = screen.getByRole("button", {
+      name: "Xem series Series số 2",
+    });
+    expect(behind.parentElement?.querySelector("[inert]")).not.toBeNull();
+    // the front card is not inert and has no "bring me forward" button
+    expect(
+      screen.queryByRole("button", { name: "Xem series Series số 1" }),
+    ).not.toBeInTheDocument();
+  });
+
   describe("controls", () => {
-    it("moves to the next group, wraps round, and the dots jump", async () => {
+    const frontTitle = () =>
+      screen
+        .getByRole("status", { hidden: false })
+        .textContent?.replace(/^Series \d+ trên \d+: /, "");
+
+    it("moves to the next series and the previous one, and wraps round", async () => {
       render(<LatestArticles series={four} />);
+      expect(frontTitle()).toBe("Series số 1");
       await userEvent.click(
         screen.getByRole("button", { name: "Nhóm series tiếp theo" }),
       );
-      await waitFor(() => expect(titlesShown()).toEqual(["Series số 4"]));
+      expect(frontTitle()).toBe("Series số 2");
       await userEvent.click(
-        screen.getByRole("button", { name: "Nhóm series tiếp theo" }),
-      );
-      await waitFor(() =>
-        expect(titlesShown()).toEqual([
-          "Series số 1",
-          "Series số 2",
-          "Series số 3",
-        ]),
+        screen.getByRole("button", { name: "Nhóm series trước" }),
       );
       await userEvent.click(
-        screen.getByRole("button", { name: "Nhóm series 2 trên 2" }),
+        screen.getByRole("button", { name: "Nhóm series trước" }),
       );
-      await waitFor(() => expect(titlesShown()).toEqual(["Series số 4"]));
+      expect(frontTitle()).toBe("Series số 4");
     });
 
-    it("has no controls when everything fits in one group", () => {
-      render(<LatestArticles series={four.slice(0, 3)} />);
+    it("jumps with the dots and with a click on a card behind", async () => {
+      render(<LatestArticles series={four} />);
+      await userEvent.click(
+        screen.getByRole("button", { name: "Nhóm series 3 trên 4" }),
+      );
+      expect(frontTitle()).toBe("Series số 3");
+      await userEvent.click(
+        screen.getByRole("button", { name: "Xem series Series số 4" }),
+      );
+      expect(frontTitle()).toBe("Series số 4");
+    });
+
+    it("moves with the arrow keys", async () => {
+      render(<LatestArticles series={four} />);
+      screen.getByRole("button", { name: "Nhóm series tiếp theo" }).focus();
+      await userEvent.keyboard("{ArrowRight}");
+      expect(frontTitle()).toBe("Series số 2");
+      await userEvent.keyboard("{ArrowLeft}{ArrowLeft}");
+      expect(frontTitle()).toBe("Series số 4");
+    });
+
+    it("has no controls when there is only one series", () => {
+      render(<LatestArticles series={four.slice(0, 1)} />);
       expect(
         screen.queryByRole("button", { name: /Nhóm series/ }),
       ).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Series số 1" })).toBeVisible();
+    });
+
+    it("works with two and three series", async () => {
+      render(<LatestArticles series={four.slice(0, 2)} />);
+      await userEvent.click(
+        screen.getByRole("button", { name: "Nhóm series tiếp theo" }),
+      );
+      expect(frontTitle()).toBe("Series số 2");
     });
   });
 
@@ -147,18 +202,29 @@ describe("LatestArticles", () => {
       } as unknown as typeof ResizeObserver;
     }
 
-    it("shows one card on a narrow module", async () => {
-      widthOf(400);
-      render(<LatestArticles series={four} />);
-      await waitFor(() => expect(titlesShown()).toEqual(["Series số 1"]));
+    const reachable = () =>
+      screen.queryAllByRole("button", { name: /^Xem series / });
+
+    it("stands the front card and two on each side on a wide stage", () => {
+      widthOf(1100);
+      render(
+        <LatestArticles series={[1, 2, 3, 4, 5, 6].map((n) => series(n))} />,
+      );
+      expect(reachable()).toHaveLength(4);
     });
 
-    it("shows two cards on a medium module", async () => {
-      widthOf(700);
-      render(<LatestArticles series={four} />);
-      await waitFor(() =>
-        expect(titlesShown()).toEqual(["Series số 1", "Series số 2"]),
+    it("stands one on each side on a medium stage", async () => {
+      widthOf(800);
+      render(
+        <LatestArticles series={[1, 2, 3, 4, 5, 6].map((n) => series(n))} />,
       );
+      await waitFor(() => expect(reachable()).toHaveLength(2));
+    });
+
+    it("shows only the front card on a narrow stage; the others come with a swipe or the controls", async () => {
+      widthOf(400);
+      render(<LatestArticles series={four} />);
+      await waitFor(() => expect(reachable()).toHaveLength(0));
     });
   });
 
@@ -190,7 +256,7 @@ describe("LatestArticles", () => {
     it("keeps its header while it loads", () => {
       const { container } = render(<LatestArticlesSkeleton />);
       expect(
-        screen.getByRole("heading", { name: "Bài viết mới nhất" }),
+        screen.getByRole("heading", { name: "Hoạt động gần đây" }),
       ).toBeInTheDocument();
       expect(screen.getByRole("status")).toHaveTextContent("Đang tải series");
       expect(container.querySelector("[aria-busy='true']")).not.toBeNull();

@@ -1,14 +1,12 @@
 "use client";
 
 import { useId, useState, type ComponentProps } from "react";
-import Link from "next/link";
 import {
   ArrowRight,
   CheckCheck,
   CircleDashed,
   LayoutGrid,
   Layers,
-  ListChecks,
   Loader,
   type LucideIcon,
 } from "lucide-react";
@@ -24,8 +22,12 @@ import {
 } from "@/design-system";
 import { useAdminQuery } from "@/features/admin/useAdminQuery";
 import { useAuth } from "@/features/auth";
-import { listStudyLists } from "@/features/study-lists";
-import type { StudyListSummary } from "@/features/study-lists";
+import {
+  SeriesCard,
+  loadSeriesShowcases,
+  toneOfIndex,
+} from "@/features/study-lists";
+import type { SeriesShowcase } from "@/features/study-lists";
 
 type Filter = "all" | "doing" | "done" | "todo";
 
@@ -37,92 +39,14 @@ const FILTERS: { id: Filter; label: string; icon: LucideIcon }[] = [
 ];
 
 /** Where a list is, from its ticked steps. A list with no steps has not started. */
-function stateOf(list: StudyListSummary): Exclude<Filter, "all"> {
+function stateOf(list: SeriesShowcase): Exclude<Filter, "all"> {
   if (list.stepCount > 0 && list.doneStepCount >= list.stepCount) return "done";
   if (list.doneStepCount > 0) return "doing";
   return "todo";
 }
 
-/** The colour under each card; the cards take turns so a row is never one colour. */
-const STRIPES = [
-  { stripe: "bg-accent-pink", icon: "bg-accent-pink" },
-  { stripe: "bg-accent-lime", icon: "bg-accent-lime" },
-  { stripe: "bg-accent-blue", icon: "bg-accent-blue" },
-  { stripe: "bg-accent-yellow", icon: "bg-accent-yellow" },
-] as const;
-
-/** At most this many lists on the home page; the rest are on the library page. */
-const MAX_LISTS = 6;
-
-function SeriesItem({
-  list,
-  index,
-}: {
-  list: StudyListSummary;
-  index: number;
-}) {
-  const colour = STRIPES[index % STRIPES.length];
-  return (
-    <li className="flex">
-      <div
-        className={cn(
-          "relative flex w-full items-center gap-3 overflow-hidden rounded-standard border-2 border-border-strong bg-surface-card p-3 pb-4 shadow-raised",
-          "transition-[translate,box-shadow] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none motion-reduce:transition-none",
-          "focus-within:translate-x-0.5 focus-within:translate-y-0.5 focus-within:shadow-none",
-        )}
-      >
-        <span
-          aria-hidden="true"
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-standard border-2 border-border-strong text-ink",
-            colour.icon,
-          )}
-        >
-          <ListChecks size={22} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <Text
-            as="h3"
-            size="body-md"
-            weight="bold"
-            className="line-clamp-2 font-display"
-          >
-            <Link
-              href={`/study-lists/${list.id}`}
-              className={cn(
-                "rounded-sharp after:absolute after:inset-0 after:content-['']",
-                focusRingClasses,
-              )}
-            >
-              {list.title}
-            </Link>
-          </Text>
-          <Text
-            as="p"
-            size="caption"
-            color="secondary"
-            className="flex flex-wrap items-center gap-x-3 gap-y-0.5"
-          >
-            <span>{list.sectionCount} chương</span>
-            <span className="inline-flex items-center gap-1">
-              <Layers aria-hidden="true" size={12} />
-              {list.stepCount} bài
-            </span>
-          </Text>
-        </div>
-        <ArrowRight
-          aria-hidden="true"
-          size={18}
-          className="shrink-0 text-text-primary"
-        />
-        <span
-          aria-hidden="true"
-          className={cn("absolute inset-x-0 bottom-0 h-1.5", colour.stripe)}
-        />
-      </div>
-    </li>
-  );
-}
+/** At most this many series on the home page; the rest are in the library. */
+const MAX_LISTS = 3;
 
 export interface StudySeriesCardProps extends Omit<
   ComponentProps<"section">,
@@ -146,7 +70,10 @@ export function StudySeriesCard({
   const titleId = useId();
   const { isAuthenticated, isLoading } = useAuth();
   const query = useAdminQuery(
-    () => (isAuthenticated ? listStudyLists() : Promise.resolve([])),
+    () =>
+      isAuthenticated
+        ? loadSeriesShowcases({ includeEmpty: true })
+        : Promise.resolve([]),
     `home-study-lists-${isAuthenticated}`,
   );
   const [filter, setFilter] = useState<Filter>("all");
@@ -176,7 +103,7 @@ export function StudySeriesCard({
     );
   } else if (query.error && !query.data) {
     body = (
-      <Alert variant="danger" title="Không tải được danh sách học">
+      <Alert variant="danger" title="Không tải được các series">
         <div className="flex flex-wrap items-center gap-3">
           <span>{query.error.message}</span>
           <Button size="compact" variant="outline" onClick={query.reload}>
@@ -195,7 +122,7 @@ export function StudySeriesCard({
           Đang tải
         </span>
         {[0, 1, 2].map((index) => (
-          <Skeleton key={index} className="h-24 w-full" />
+          <Skeleton key={index} className="h-80 w-full" />
         ))}
       </div>
     );
@@ -219,9 +146,15 @@ export function StudySeriesCard({
     );
   } else {
     body = (
-      <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
-        {shown.map((list, index) => (
-          <SeriesItem key={list.id} list={list} index={index} />
+      <ul className="m-0 grid list-none gap-6 p-0 pb-3 sm:grid-cols-2 xl:grid-cols-3">
+        {shown.map((series, index) => (
+          <li key={series.id} className="flex min-w-0">
+            <SeriesCard
+              series={series}
+              tone={toneOfIndex(index)}
+              className="h-full w-full"
+            />
+          </li>
         ))}
       </ul>
     );

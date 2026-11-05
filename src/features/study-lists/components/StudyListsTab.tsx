@@ -1,71 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ListChecks, Plus } from "lucide-react";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Skeleton,
-  Text,
-  cn,
-  focusRingClasses,
-} from "@/design-system";
+import { Alert, Button, EmptyState, Skeleton, Text } from "@/design-system";
 import { useAdminQuery } from "@/features/admin/useAdminQuery";
-import { listStudyLists } from "../studyListsApi";
-import type { StudyListSummary } from "../types";
+import { loadSeriesShowcases, toneOfIndex } from "../seriesShowcase";
+import { SeriesCard } from "./SeriesCard";
 import { CreateStudyListDialog } from "./CreateStudyListDialog";
 
-function StudyListCard({ list }: { list: StudyListSummary }) {
-  return (
-    <Card as="article" interactive className="relative gap-3">
-      <div className="flex flex-col gap-1">
-        <Text as="h3" size="heading-sm" weight="bold" className="font-display">
-          <Link
-            href={`/study-lists/${list.id}`}
-            className={cn(
-              "rounded-sharp after:absolute after:inset-0 after:content-['']",
-              focusRingClasses,
-            )}
-          >
-            {list.title}
-          </Link>
-        </Text>
-        {list.description && (
-          <Text size="body-sm" color="secondary" className="line-clamp-2">
-            {list.description}
-          </Text>
-        )}
-      </div>
-      <Text size="body-sm" color="secondary">
-        {list.sectionCount} chương · {list.stepCount} bài
-      </Text>
-      {list.certificates.length > 0 && (
-        <ul
-          aria-label="Chứng chỉ liên kết"
-          className="relative z-10 flex flex-wrap gap-2"
-        >
-          {list.certificates.map((certificate) => (
-            <li key={certificate.id}>
-              <Link href={`/certificates/${certificate.id}`}>
-                <Badge variant="lime" size="sm">
-                  {certificate.name}
-                </Badge>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
-/** The "Danh sách học" tab of the library: the learner's own study lists, and a way to start one. */
+/** The "Series học" tab of the library: the learner's own study lists as series cards, and a way to start one. */
 export function StudyListsTab() {
-  const query = useAdminQuery(listStudyLists, "study-lists");
+  const query = useAdminQuery(
+    () => loadSeriesShowcases({ includeEmpty: true }),
+    "study-lists",
+  );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   let body;
@@ -99,12 +47,14 @@ export function StudyListsTab() {
     );
   } else {
     body = (
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {query.data.map((list) => (
-          <li key={list.id} className="flex">
-            <div className="w-full">
-              <StudyListCard list={list} />
-            </div>
+      <ul className="grid gap-6 pb-3 sm:grid-cols-2 xl:grid-cols-3">
+        {query.data.map((series, index) => (
+          <li key={series.id} className="flex min-w-0">
+            <SeriesCard
+              series={series}
+              tone={toneOfIndex(index)}
+              className="h-full w-full"
+            />
           </li>
         ))}
       </ul>
@@ -132,7 +82,7 @@ export function StudyListsTab() {
               weight="bold"
               font="display"
             >
-              Danh sách học
+              Series học
             </Text>
             <Text size="body-sm" color="secondary">
               Lộ trình do bạn tự soạn: các phần theo thứ tự, mỗi phần có từng

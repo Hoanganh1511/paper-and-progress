@@ -23,6 +23,8 @@ export interface StepArticle {
   title: string;
   status: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
   readingMinutes: number;
+  /** ISO date; null while the article is not published. */
+  publishedAt: string | null;
 }
 
 export interface StudyStep {

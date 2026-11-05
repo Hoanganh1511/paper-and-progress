@@ -271,7 +271,7 @@ export function CertificateForm({
             label="Danh sách học"
             description={
               studyLists.length === 0
-                ? "Bạn chưa có danh sách học nào. Tạo ở Thư viện kiến thức, tab “Danh sách học”."
+                ? "Bạn chưa có danh sách học nào. Tạo ở Thư viện kiến thức, tab “Series học”."
                 : "Gắn một danh sách học để theo dõi tiến độ chứng chỉ này."
             }
           >
