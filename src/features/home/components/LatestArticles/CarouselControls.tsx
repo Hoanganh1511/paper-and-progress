@@ -27,15 +27,15 @@ export function CarouselControls({
         icon={ChevronLeft}
         variant="outline"
         size="compact"
-        aria-label="Nhóm bài viết trước"
+        aria-label="Nhóm series trước"
         onClick={onPrevious}
       />
-      <ul className="flex items-center" aria-label="Các nhóm bài viết">
+      <ul className="flex items-center" aria-label="Các nhóm series">
         {Array.from({ length: count }, (_, index) => (
           <li key={index}>
             <button
               type="button"
-              aria-label={`Nhóm bài viết ${index + 1} trên ${count}`}
+              aria-label={`Nhóm series ${index + 1} trên ${count}`}
               aria-current={index === current ? "true" : undefined}
               onClick={() => onSelect(index)}
               className="relative flex size-11 cursor-pointer items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus"
@@ -57,7 +57,7 @@ export function CarouselControls({
         icon={ChevronRight}
         variant="outline"
         size="compact"
-        aria-label="Nhóm bài viết tiếp theo"
+        aria-label="Nhóm series tiếp theo"
         onClick={onNext}
       />
     </div>

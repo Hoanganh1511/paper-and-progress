@@ -484,6 +484,54 @@ describe("ArticleEditor", () => {
     expect(api.updateArticle.mock.calls[0][1].isAutosave).toBe(false);
   });
 
+  it("sends the version it holds, and asks before overwriting a newer one", async () => {
+    const { ArticlesApiError } = await vi.importActual<
+      typeof import("../articlesApi")
+    >("../articlesApi");
+    api.createArticle.mockResolvedValue({
+      id: "a1",
+      slug: "bai-dau-tien",
+      version: "v1",
+    });
+    api.updateArticle
+      .mockRejectedValueOnce(
+        new ArticlesApiError("Bài đã đổi ở nơi khác", 409, "ARTICLE_CONFLICT"),
+      )
+      .mockResolvedValue({
+        id: "a1",
+        slug: "bai-dau-tien",
+        status: "DRAFT",
+        version: "v3",
+      });
+    render(<ArticleEditor />);
+    await write();
+    await userEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+    await waitFor(() => expect(api.createArticle).toHaveBeenCalledTimes(1));
+
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Tiêu đề" }),
+      " 2",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+    await waitFor(() => expect(api.updateArticle).toHaveBeenCalledTimes(1));
+    expect(api.updateArticle.mock.calls[0][1].baseVersion).toBe("v1");
+    expect(api.updateArticle.mock.calls[0][1].force).toBeUndefined();
+    expect(
+      await screen.findByText("Bài viết đã được sửa ở nơi khác"),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Giữ bản của tôi/ }),
+    );
+    await waitFor(() => expect(api.updateArticle).toHaveBeenCalledTimes(2));
+    expect(api.updateArticle.mock.calls[1][1].force).toBe(true);
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Bài viết đã được sửa ở nơi khác"),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
   it("shows the server's message when publishing fails", async () => {
     api.createArticle.mockResolvedValue({ id: "a1", slug: "x" });
     api.publishArticle.mockRejectedValue(new Error("Bạn không có quyền"));

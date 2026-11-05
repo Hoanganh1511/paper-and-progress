@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Lock } from "lucide-react";
+import { Clock, Layers, Lock } from "lucide-react";
 import { Badge, Card, Image, Text } from "@/design-system";
 import { authorName, formatDate } from "../format";
 import type { ArticleCardData } from "../types";
@@ -29,9 +29,8 @@ export function ArticleCard({ article }: ArticleCardProps) {
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           {article.series && (
-            <Badge size="sm" variant="blue">
-              {article.series.title}
-              {article.seriesOrder ? ` · Phần ${article.seriesOrder}` : ""}
+            <Badge size="sm" variant="pink" icon={Layers}>
+              Series: {article.series.title}
             </Badge>
           )}
           {article.visibility !== "PUBLIC" && (

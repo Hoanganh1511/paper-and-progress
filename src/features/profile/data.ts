@@ -149,14 +149,6 @@ export const PROFILE_OVERVIEW: ProfileOverview = {
       time: "2 ngày trước",
       href: "/bookmarks",
     },
-    {
-      id: "r4",
-      kind: "devlog",
-      action: "Cập nhật devlog",
-      title: "Auth System — Phase 1",
-      time: "3 ngày trước",
-      href: "/devlog",
-    },
   ],
   goals: [
     { id: "g1", label: "Hoàn thành 2 bài Backend", isDone: true },

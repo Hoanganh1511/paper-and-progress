@@ -1,8 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Mail, Phone, type LucideIcon } from "lucide-react";
-import { IconButton, Text } from "@/design-system";
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  FileUser,
+  Mail,
+  Phone,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  IconButton,
+  LinkButton,
+  Text,
+  cn,
+  focusRingClasses,
+} from "@/design-system";
+import { FacebookIcon, InstagramIcon, OWNER_LINKS } from "@/features/cv";
 import { Mascot } from "@/features/english";
 
 const OWNER = {
@@ -13,6 +28,11 @@ const OWNER = {
 } as const;
 
 const COPIED_MS = 2000;
+
+const SOCIAL_LINKS = [
+  { label: "Facebook", href: OWNER_LINKS.facebook, Icon: FacebookIcon },
+  { label: "Instagram", href: OWNER_LINKS.instagram, Icon: InstagramIcon },
+] as const;
 
 function ContactRow({
   icon: Icon,
@@ -101,6 +121,38 @@ export function AboutMeCard() {
           href={`tel:${OWNER.phone}`}
         />
       </ul>
+      <ul
+        aria-label="Mạng xã hội"
+        className="m-0 flex list-none items-center gap-2 p-0 pt-1"
+      >
+        {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+          <li key={label}>
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${label} của ${OWNER.name} (mở trong tab mới)`}
+              title={label}
+              className={cn(
+                "inline-flex size-11 items-center justify-center rounded-standard border-2 border-border-strong bg-surface-card text-ink shadow-raised",
+                "transition-[background-color,box-shadow,translate] hover:bg-accent-lime active:translate-x-0.5 active:translate-y-0.5 active:shadow-none motion-reduce:transition-none",
+                focusRingClasses,
+              )}
+            >
+              <Icon size={20} />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <LinkButton
+        href="/cv"
+        variant="accent"
+        isFullWidth
+        leftIcon={FileUser}
+        rightIcon={ArrowRight}
+      >
+        Xem CV của tôi
+      </LinkButton>
     </section>
   );
 }

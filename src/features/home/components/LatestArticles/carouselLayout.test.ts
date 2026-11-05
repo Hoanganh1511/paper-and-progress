@@ -1,37 +1,4 @@
-import type { ArticleCardData } from "@/features/articles";
-import {
-  categoryOf,
-  chunk,
-  formatViews,
-  poseOf,
-  slotsFor,
-  toneOf,
-} from "./carouselLayout";
-
-const withTags = (...slugs: string[]) =>
-  ({
-    tags: slugs.map((slug) => ({ slug, name: slug })),
-  }) as ArticleCardData;
-
-describe("formatViews", () => {
-  it.each([
-    [956, "956"],
-    [1000, "1k"],
-    [2100, "2.1k"],
-    [9990, "10k"],
-    [12000, "12k"],
-    [12400, "12k"],
-  ])("writes %i as %s", (count, text) => {
-    expect(formatViews(count)).toBe(text);
-  });
-
-  it.each([[0], [undefined], [null], [-5]])(
-    "has nothing to show for %s",
-    (count) => {
-      expect(formatViews(count)).toBeNull();
-    },
-  );
-});
+import { chunk, poseOf, slotsFor, toneOfIndex } from "./carouselLayout";
 
 describe("chunk", () => {
   it("groups in threes and never leaves an empty slide", () => {
@@ -45,18 +12,10 @@ describe("chunk", () => {
   });
 });
 
-describe("category colour", () => {
-  it("follows the first tag, not the article", () => {
-    expect(toneOf(withTags("react", "backend"))).toBe("lime");
-    expect(toneOf(withTags("backend", "react"))).toBe("blue");
-    expect(toneOf(withTags("english"))).toBe("yellow");
-    expect(toneOf(withTags("productivity"))).toBe("pink");
-  });
-
-  it("is white for an unknown topic or no tag", () => {
-    expect(toneOf(withTags("gardening"))).toBe("white");
-    expect(toneOf(withTags())).toBe("white");
-    expect(categoryOf(withTags())).toBeNull();
+describe("toneOfIndex", () => {
+  it("gives neighbours different colours and starts over after the last", () => {
+    expect(toneOfIndex(0)).not.toBe(toneOfIndex(1));
+    expect(toneOfIndex(4)).toBe(toneOfIndex(0));
   });
 });
 
@@ -67,7 +26,7 @@ describe("slotsFor and poseOf", () => {
     expect(slotsFor(1)).toEqual(["solo"]);
   });
 
-  it("tilts the sides in opposite ways, smaller and lower, and keeps the centre straight and in front", () => {
+  it("tilts the sides in opposite ways, lower, and keeps the centre straight and in front", () => {
     const left = poseOf("left", false);
     const right = poseOf("right", false);
     const center = poseOf("center", false);
@@ -75,7 +34,7 @@ describe("slotsFor and poseOf", () => {
     expect(right.rotate).toBe(-left.rotate);
     expect(center.rotate).toBe(0);
     expect(center.scale).toBe(1);
-    expect(left.scale).toBeLessThan(center.scale);
+    expect(left.scale).toBe(center.scale);
     expect(left.y).toBeGreaterThan(center.y);
     expect(center.zIndex).toBeGreaterThan(left.zIndex);
   });

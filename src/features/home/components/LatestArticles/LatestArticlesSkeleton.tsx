@@ -23,19 +23,22 @@ export function LatestArticlesSkeleton({
       aria-labelledby="latest-articles-loading-title"
       aria-busy="true"
       lang="vi"
-      className={cn("gap-4 rounded-soft shadow-modal", className)}
+      className={cn(
+        "gap-4 rounded-soft bg-[linear-gradient(135deg,#5a3d2e,#35241c)] text-white shadow-modal",
+        className,
+      )}
       {...props}
     >
       <LatestArticlesHeader titleId="latest-articles-loading-title" />
       <span role="status" className="sr-only">
-        Đang tải bài viết
+        Đang tải series
       </span>
-      <div className="flex min-h-[24rem] items-center justify-center gap-4 pt-6 pb-8 sm:min-h-[27rem]">
+      <div className="flex min-h-[28rem] items-center justify-center gap-4 pt-6 pb-8">
         {[0, 1, 2].map((index) => (
           <Skeleton
             key={index}
             className={cn(
-              "h-[19rem] w-60 sm:h-[21rem] sm:w-64 xl:w-72",
+              "h-[24rem] w-72 bg-white/15 sm:w-96 xl:w-[26rem]",
               index > 0 && "max-md:hidden",
             )}
           />

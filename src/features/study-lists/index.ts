@@ -4,4 +4,4 @@ export {
 } from "./components/StudyListScreen";
 export { StudyListsTab } from "./components/StudyListsTab";
 export { addStep, getStudyList, listStudyLists } from "./studyListsApi";
-export type { StudyListSummary } from "./types";
+export type { StudyListDetail, StudyListSummary } from "./types";

@@ -18,12 +18,15 @@ import { createStudyList } from "../studyListsApi";
 export interface CreateStudyListDialogProps {
   open: boolean;
   onClose: () => void;
+  /** Called once the list is saved, before its page opens: the caller can refresh what it shows. */
+  onCreated?: () => void;
 }
 
 /** The form that opens from "Tạo danh sách"; once saved, the new list opens so its parts can be written. */
 export function CreateStudyListDialog({
   open,
   onClose,
+  onCreated,
 }: CreateStudyListDialogProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -55,6 +58,13 @@ export function CreateStudyListDialog({
         title: title.trim(),
         description: description.trim() || undefined,
       });
+      // Done here, not left to the next page: coming back to this page (it is kept
+      // as it was) must not show the form still open with its button still spinning.
+      setTitle("");
+      setDescription("");
+      setIsSaving(false);
+      onClose();
+      onCreated?.();
       router.push(`/study-lists/${created.id}`);
     } catch (caught) {
       setError(

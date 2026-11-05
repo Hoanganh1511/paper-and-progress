@@ -23,6 +23,9 @@ import { addStep } from "@/features/study-lists";
 import { RichTextEditor } from "@/features/rich-text";
 import {
   createArticle,
+  getEditable,
+  isConflict,
+  isTemporaryFailure,
   listSeries,
   listTags,
   publishArticle,
@@ -142,6 +145,10 @@ export function ArticleEditor({
   const idRef = useRef(initial?.id);
   const lastSlug = useRef(initial?.slug);
   const isManualSave = useRef(false);
+  // The text as last loaded or saved here; the server compares it before overwriting.
+  const versionRef = useRef(initial?.version);
+  const isForced = useRef(false);
+  const [isConflicting, setIsConflicting] = useState(false);
   const editorRef = useRef<Editor | undefined>(undefined);
   const coverInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
@@ -163,11 +170,15 @@ export function ArticleEditor({
     if (!idRef.current) {
       const created = await createArticle(input);
       idRef.current = created.id;
+      versionRef.current = created.version;
       lastSlug.current = created.slug;
       setArticleId(created.id);
       setPublishedSlug(created.slug);
-      // The address now names the article, without reloading the editor.
-      window.history.replaceState(null, "", `/write/${created.id}`);
+      // The address now names the article, without reloading the editor. Not
+      // when the writer already left (this save finished the editor's last words).
+      if (window.location.pathname.startsWith("/write")) {
+        window.history.replaceState(null, "", `/write/${created.id}`);
+      }
       // Written for a part of a study list: it goes in there, once, as that part's step.
       if (sectionRef.current) {
         try {
@@ -184,13 +195,23 @@ export function ArticleEditor({
       }
       return;
     }
-    const updated = await updateArticle(idRef.current, {
-      ...input,
-      isAutosave: !isManualSave.current,
-    });
-    lastSlug.current = updated.slug;
-    setPublishedSlug(updated.slug);
-    setStatus(updated.status);
+    try {
+      const updated = await updateArticle(idRef.current, {
+        ...input,
+        isAutosave: !isManualSave.current,
+        baseVersion: versionRef.current,
+        ...(isForced.current ? { force: true } : {}),
+      });
+      versionRef.current = updated.version;
+      lastSlug.current = updated.slug;
+      setPublishedSlug(updated.slug);
+      setStatus(updated.status);
+      setIsConflicting(false);
+    } catch (caught) {
+      // Saved from somewhere else meanwhile: stop saving and let the writer choose.
+      if (isConflict(caught)) setIsConflicting(true);
+      throw caught;
+    }
   }, []);
 
   const hasContent = draft.contentHtml.trim().length > 0;
@@ -198,9 +219,41 @@ export function ArticleEditor({
     value: draft,
     save,
     delay: AUTOSAVE_DELAY_MS,
-    // Nothing is created before there is a title and some text.
-    isEnabled: draft.title.trim().length > 0 && hasContent,
+    // Nothing is created before there is a title and some text, and nothing
+    // is saved over a newer version until the writer has chosen.
+    isEnabled:
+      draft.title.trim().length > 0 && hasContent && !isConflicting,
+    // A dropped connection or a busy server passes; a refusal does not.
+    maxRetries: 4,
+    shouldRetry: isTemporaryFailure,
   });
+
+  async function keepMyVersion() {
+    isForced.current = true;
+    setIsConflicting(false);
+    try {
+      await saveNow(true);
+    } catch {
+      // The alert below shows what went wrong.
+    } finally {
+      isForced.current = false;
+    }
+  }
+
+  async function loadLatestVersion() {
+    const id = idRef.current;
+    if (!id) return;
+    setError(undefined);
+    try {
+      onRestored?.(await getEditable(id));
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Không tải được bản mới nhất.",
+      );
+    }
+  }
 
   async function saveNow(isManual: boolean) {
     isManualSave.current = isManual;
@@ -276,11 +329,14 @@ export function ArticleEditor({
     return true;
   };
 
-  const statusText =
-    autosave.status === "saving"
+  const statusText = isConflicting
+    ? "Chưa lưu: bài đã đổi ở nơi khác"
+    : autosave.status === "saving"
       ? "Đang lưu nháp..."
       : autosave.status === "error"
-        ? "Lỗi, thử lại"
+        ? autosave.isRetrying
+          ? "Chưa lưu được, đang tự thử lại..."
+          : "Lỗi, thử lại"
         : autosave.savedAt
           ? `${status === "DRAFT" ? "Đã lưu nháp" : "Đã lưu"} lúc ${clock(autosave.savedAt)}`
           : hasContent && draft.title.trim()
@@ -295,6 +351,28 @@ export function ArticleEditor({
       <div className="flex min-w-0 flex-col gap-4">
         {addToSection && (
           <StudySectionBanner target={addToSection} isAdded={isInSection} />
+        )}
+        {isConflicting && (
+          <Alert variant="danger" title="Bài viết đã được sửa ở nơi khác">
+            <div className="flex flex-col gap-3">
+              <span>
+                Có một bản mới hơn (từ tab hoặc máy khác). Bản của bạn chưa được
+                lưu để không ghi đè lên nó. Hãy chọn giữ bản nào.
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="compact"
+                  variant="outline"
+                  onClick={() => void loadLatestVersion()}
+                >
+                  Tải bản mới nhất (bỏ thay đổi của tôi)
+                </Button>
+                <Button size="compact" onClick={() => void keepMyVersion()}>
+                  Giữ bản của tôi (ghi đè)
+                </Button>
+              </div>
+            </div>
+          </Alert>
         )}
         <FormField label="Tiêu đề" required>
           <Input
@@ -412,7 +490,7 @@ export function ArticleEditor({
           <Text size="body-sm" role="status" color="secondary">
             {statusText}
           </Text>
-          {autosave.status === "error" && autosave.error && (
+          {autosave.status === "error" && autosave.error && !isConflicting && (
             <Alert variant="danger">
               {autosave.error}{" "}
               <button

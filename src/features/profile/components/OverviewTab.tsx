@@ -4,7 +4,6 @@ import {
   Flame,
   GraduationCap,
   Info,
-  NotebookPen,
   PenLine,
   Plus,
   Sparkles,
@@ -42,7 +41,6 @@ const ACTIVITY_ICON: Record<ActivityKind, LucideIcon> = {
   lesson: GraduationCap,
   diary: PenLine,
   bookmark: Bookmark,
-  devlog: NotebookPen,
 };
 
 const FOCUS_RING =

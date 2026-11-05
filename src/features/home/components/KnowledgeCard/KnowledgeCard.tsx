@@ -2,7 +2,7 @@ import { useId, type ComponentProps } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Badge, Card, LinkButton, Text, cn } from "@/design-system";
-import { formatDevlogDate } from "@/features/devlog";
+import { formatLogDate } from "@/features/learning-log/learningLogs";
 import type { Bookmark } from "@/features/bookmarks";
 
 export interface KnowledgeCardProps extends Omit<
@@ -60,7 +60,7 @@ export function KnowledgeCard({
                 ))}
                 <Text as="span" size="caption" color="muted">
                   <time dateTime={bookmark.savedAt}>
-                    {formatDevlogDate(bookmark.savedAt.slice(0, 10))}
+                    {formatLogDate(bookmark.savedAt.slice(0, 10))}
                   </time>
                 </Text>
               </div>

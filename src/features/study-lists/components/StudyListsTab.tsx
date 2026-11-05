@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   EmptyState,
-  ProgressBar,
   Skeleton,
   Text,
   cn,
@@ -41,19 +40,8 @@ function StudyListCard({ list }: { list: StudyListSummary }) {
           </Text>
         )}
       </div>
-      {list.stepCount > 0 ? (
-        <ProgressBar
-          value={list.progress}
-          label={`Tiến độ ${list.title}`}
-          showValue
-        />
-      ) : (
-        <Text size="body-sm" color="secondary">
-          Chưa có bước nào.
-        </Text>
-      )}
       <Text size="body-sm" color="secondary">
-        {list.sectionCount} phần · {list.doneStepCount}/{list.stepCount} bước
+        {list.sectionCount} chương · {list.stepCount} bài
       </Text>
       {list.certificates.length > 0 && (
         <ul
@@ -166,6 +154,7 @@ export function StudyListsTab() {
       <CreateStudyListDialog
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+        onCreated={query.reload}
       />
     </section>
   );

@@ -53,7 +53,7 @@ export interface WeeklyGoal {
   isDone: boolean;
 }
 
-export type ActivityKind = "lesson" | "diary" | "bookmark" | "devlog";
+export type ActivityKind = "lesson" | "diary" | "bookmark";
 
 export interface RecentActivity {
   id: string;

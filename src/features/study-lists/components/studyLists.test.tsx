@@ -58,9 +58,8 @@ describe("StudyListsTab", () => {
     expect(
       await screen.findByRole("link", { name: "Ôn thi AWS" }),
     ).toHaveAttribute("href", "/study-lists/l1");
-    expect(
-      screen.getByRole("progressbar", { name: /Ôn thi AWS/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("2 chương · 4 bài")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "AWS SAA" })).toHaveAttribute(
       "href",
       "/certificates/c1",
@@ -101,6 +100,9 @@ describe("StudyListsTab", () => {
       description: "Từ cơ bản",
     });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/study-lists/new1"));
+    // Coming back to this page, the form is gone and the list is read again.
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(api.listStudyLists).toHaveBeenCalledTimes(2);
   });
 
   it("shows a failed load with a retry", async () => {

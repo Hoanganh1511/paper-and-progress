@@ -1,11 +1,10 @@
 import { Newspaper } from "lucide-react";
-import { Text } from "@/design-system";
 
 export interface LatestArticlesHeaderProps {
   titleId: string;
 }
 
-/** The icon, the title and subtitle. */
+/** The icon, the title and the line under it; made to sit on the module's dark surface. */
 export function LatestArticlesHeader({ titleId }: LatestArticlesHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
@@ -14,18 +13,15 @@ export function LatestArticlesHeader({ titleId }: LatestArticlesHeaderProps) {
           <Newspaper aria-hidden="true" size={22} />
         </span>
         <div className="min-w-0">
-          <Text
-            as="h2"
+          <h2
             id={titleId}
-            size="heading-md"
-            weight="bold"
-            className="font-display"
+            className="font-display text-heading-md font-bold text-white"
           >
             Bài viết mới nhất
-          </Text>
-          <Text size="body-sm" color="secondary">
-            Khám phá những bài viết vừa được đăng trên Baolingo.
-          </Text>
+          </h2>
+          <p className="text-body-sm text-white/80">
+            Khám phá các series nổi bật, mỗi series kèm 3 bài đầu tiên.
+          </p>
         </div>
       </div>
     </div>

@@ -117,7 +117,7 @@ describe("ProfileScreen", () => {
     const activity = screen
       .getByRole("heading", { name: "Hoạt động gần đây" })
       .closest("section")!;
-    expect(within(activity).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(activity).getAllByRole("listitem")).toHaveLength(3);
     expect(
       within(activity).getByRole("link", { name: /Hoàn thành bài học/ }),
     ).toHaveAttribute("href", "/goals/tech/backend-tutor");

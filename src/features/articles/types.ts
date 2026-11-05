@@ -109,6 +109,8 @@ export interface EditableArticle extends ArticleCardData {
   seriesId: string | null;
   updatedAt: string;
   authorId: string;
+  /** Fingerprint of the text as loaded; sent back on save so a change made elsewhere is noticed. */
+  version: string;
 }
 
 export interface ArticleInput {

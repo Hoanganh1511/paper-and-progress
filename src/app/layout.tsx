@@ -7,7 +7,6 @@ import { SkipLink, ThemeScript, ToastProvider } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
 import { DailyGateLauncher } from "@/features/daily-gate";
-import { HideOnRoutes } from "./HideOnRoutes";
 import { RouterLinks } from "./RouterLinks";
 import "./globals.css";
 
@@ -91,15 +90,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               {/* Grows to fill short pages, so the footer stays at the bottom. A
               column, so a page can in turn grow to fill it (e.g. to centre). */}
               <div className="flex flex-1 flex-col">{children}</div>
-              {/* These pages fill exactly one screen, so no footer below them. */}
-              <Suspense fallback={null}>
-                <HideOnRoutes paths={["/devlog"]}>
-                  <AppFooter
-                    zaloHref={ZALO_SUPPORT_URL}
-                    communityHref={FACEBOOK_COMMUNITY_URL}
-                  />
-                </HideOnRoutes>
-              </Suspense>
+              <AppFooter
+                zaloHref={ZALO_SUPPORT_URL}
+                communityHref={FACEBOOK_COMMUNITY_URL}
+              />
               {/* Opens the Daily English Gate; stacks above the dev todo button in development. */}
               <Suspense fallback={null}>
                 <DailyGateLauncher hasDevTodo={DevTodoWidget !== null} />

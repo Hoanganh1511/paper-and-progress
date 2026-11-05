@@ -22,13 +22,28 @@ import type {
 /** Calls made in the browser with the signed-in user's token. Public reads live in `articlesData.ts`. */
 export class ArticlesApiError extends Error {
   status: number;
+  /** A machine-readable reason when the server gives one, e.g. `ARTICLE_CONFLICT`. */
+  code?: string;
 
-  constructor(message: string, status = 0) {
+  constructor(message: string, status = 0, code?: string) {
     super(message);
     this.name = "ArticlesApiError";
     this.status = status;
+    this.code = code;
   }
 }
+
+/** The article was saved from somewhere else since this editor loaded it. */
+export const isConflict = (error: unknown) =>
+  error instanceof ArticlesApiError && error.code === "ARTICLE_CONFLICT";
+
+/** A failure that may pass by itself (no connection, server trouble, rate limit) and is worth retrying. */
+export const isTemporaryFailure = (error: unknown) =>
+  error instanceof ArticlesApiError &&
+  (error.status === 0 ||
+    error.status >= 500 ||
+    error.status === 408 ||
+    error.status === 429);
 
 async function call<T>(request: Promise<{ data: T }>): Promise<T> {
   try {
@@ -38,13 +53,15 @@ async function call<T>(request: Promise<{ data: T }>): Promise<T> {
       throw new ArticlesApiError("Không kết nối được máy chủ. Thử lại sau.");
     }
     const { status, data } = error.response;
-    const raw = (data as { message?: unknown } | undefined)?.message;
+    const body = data as { message?: unknown; code?: unknown } | undefined;
+    const raw = body?.message;
+    const code = typeof body?.code === "string" ? body.code : undefined;
     const message = Array.isArray(raw)
       ? raw.map(String).join(" ")
       : typeof raw === "string"
         ? raw
         : "Có lỗi xảy ra. Thử lại sau.";
-    throw new ArticlesApiError(message, status);
+    throw new ArticlesApiError(message, status, code);
   }
 }
 
@@ -148,17 +165,30 @@ export const getEditable = (id: string) =>
   call(authedApi.get<EditableArticle>(`/articles/${id}/editable`));
 
 export const createArticle = (input: ArticleInput) =>
-  call(authedApi.post<{ id: string; slug: string }>("/articles", input));
+  call(
+    authedApi.post<{ id: string; slug: string; version: string }>(
+      "/articles",
+      input,
+    ),
+  );
 
 export const updateArticle = (
   id: string,
-  input: Partial<ArticleInput> & { isAutosave?: boolean },
+  input: Partial<ArticleInput> & {
+    isAutosave?: boolean;
+    /** The `version` this edit started from; a different one stored answers 409. */
+    baseVersion?: string;
+    /** Save over whatever is stored: the writer chose their copy. */
+    force?: boolean;
+  },
 ) =>
   call(
-    authedApi.patch<{ id: string; slug: string; status: ArticleStatus }>(
-      `/articles/${id}`,
-      input,
-    ),
+    authedApi.patch<{
+      id: string;
+      slug: string;
+      status: ArticleStatus;
+      version: string;
+    }>(`/articles/${id}`, input),
   );
 
 export const publishArticle = (id: string, scheduledAt?: Date) =>

@@ -148,4 +148,141 @@ describe("the draft is saved once the writer has stopped for 5 seconds", () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith("abc");
   });
+
+  it("saves what is waiting when the editor is closed before the countdown ends", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const { rerender, unmount } = renderHook(
+      ({ value }) => useAutosave({ value, save, delay: 5000 }),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "ab" });
+    await act(async () => vi.advanceTimersByTimeAsync(1000));
+    expect(save).not.toHaveBeenCalled();
+
+    unmount(); // a link inside the app was clicked
+    await act(async () => vi.advanceTimersByTimeAsync(0));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("ab");
+  });
+
+  it("does not save on close when nothing changed, or when saving is turned off", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const clean = renderHook(() => useAutosave({ value: "a", save }));
+    clean.unmount();
+
+    const off = renderHook(
+      ({ value }) => useAutosave({ value, save, isEnabled: false }),
+      { initialProps: { value: "a" } },
+    );
+    off.rerender({ value: "ab" });
+    off.unmount();
+    await act(async () => vi.advanceTimersByTimeAsync(0));
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("saves right away when the tab is hidden", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value }) => useAutosave({ value, save, delay: 5000 }),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "ab" });
+    const visibility = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    visibility.mockRestore();
+    expect(save).toHaveBeenCalledWith("ab");
+  });
+
+  it("retries a failed save by itself, then settles once it works", async () => {
+    const save = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Mất mạng"))
+      .mockRejectedValueOnce(new Error("Mất mạng"))
+      .mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(
+      ({ value }) =>
+        useAutosave({
+          value,
+          save,
+          delay: 100,
+          maxRetries: 3,
+          retryDelay: () => 1000,
+        }),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" });
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("error");
+    expect(result.current.isRetrying).toBe(true);
+
+    await act(async () => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(2);
+    await act(async () => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(3);
+    expect(result.current.status).toBe("saved");
+    expect(result.current.isRetrying).toBe(false);
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it("gives up after maxRetries, and does not retry what shouldRetry refuses", async () => {
+    const save = vi.fn().mockRejectedValue(new Error("Mất mạng"));
+    const { result, rerender } = renderHook(
+      ({ value }) =>
+        useAutosave({
+          value,
+          save,
+          delay: 100,
+          maxRetries: 2,
+          retryDelay: () => 1000,
+        }),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" });
+    await act(async () => vi.advanceTimersByTimeAsync(100 + 5000));
+    expect(save).toHaveBeenCalledTimes(3); // the first try and two retries
+    expect(result.current.isRetrying).toBe(false);
+    expect(result.current.isDirty).toBe(true);
+
+    const refused = vi.fn().mockRejectedValue(new Error("409"));
+    const other = renderHook(
+      ({ value }) =>
+        useAutosave({
+          value,
+          save: refused,
+          delay: 100,
+          maxRetries: 3,
+          shouldRetry: () => false,
+        }),
+      { initialProps: { value: "a" } },
+    );
+    other.rerender({ value: "b" });
+    await act(async () => vi.advanceTimersByTimeAsync(100 + 20000));
+    expect(refused).toHaveBeenCalledTimes(1);
+  });
+
+  it("still saves after a manual save when nothing had changed (it must not stay marked as running)", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(
+      ({ value }) => useAutosave({ value, save, delay: 1000 }),
+      { initialProps: { value: "a" } },
+    );
+    await act(async () => result.current.saveNow()); // the button, with nothing new to save
+    expect(save).not.toHaveBeenCalled();
+
+    rerender({ value: "ab" });
+    await act(async () => vi.advanceTimersByTimeAsync(1000));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("ab");
+
+    rerender({ value: "abc" });
+    await act(async () => result.current.saveNow());
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("abc");
+    expect(result.current.status).toBe("saved");
+  });
 });

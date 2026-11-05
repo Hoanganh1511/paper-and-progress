@@ -506,20 +506,54 @@ body {
 }
 .rich-text .hljs-keyword,
 .rich-text .hljs-selector-tag,
-.rich-text .hljs-built_in {
+.rich-text .hljs-built_in,
+.rich-text .hljs-name,
+.rich-text .hljs-doctag,
+.rich-text .hljs-section {
   color: var(--color-info-text);
   font-weight: 700;
 }
 .rich-text .hljs-string,
 .rich-text .hljs-attr,
-.rich-text .hljs-regexp {
+.rich-text .hljs-regexp,
+.rich-text .hljs-addition,
+.rich-text .hljs-selector-attr,
+.rich-text .hljs-selector-pseudo {
   color: var(--color-success-text);
 }
 .rich-text .hljs-number,
 .rich-text .hljs-literal,
 .rich-text .hljs-title,
-.rich-text .hljs-function {
+.rich-text .hljs-function,
+.rich-text .hljs-type,
+.rich-text .hljs-class,
+.rich-text .hljs-symbol,
+.rich-text .hljs-bullet,
+.rich-text .hljs-selector-class,
+.rich-text .hljs-selector-id,
+.rich-text .hljs-deletion {
   color: var(--color-danger-text);
+}
+.rich-text .hljs-variable,
+.rich-text .hljs-template-variable,
+.rich-text .hljs-attribute,
+.rich-text .hljs-property,
+.rich-text .hljs-params,
+.rich-text .hljs-meta,
+.rich-text .hljs-link {
+  color: var(--color-warning-text);
+}
+.rich-text .hljs-tag,
+.rich-text .hljs-punctuation,
+.rich-text .hljs-operator,
+.rich-text .hljs-subst {
+  color: var(--color-text-secondary);
+}
+.rich-text .hljs-emphasis {
+  font-style: italic;
+}
+.rich-text .hljs-strong {
+  font-weight: 700;
 }
 
 /* Changing page: the old content fades out, the new content fades in and rises

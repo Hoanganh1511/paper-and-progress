@@ -13,7 +13,7 @@ export const LAUNCHER_MODULES: LauncherModule[] = [
   {
     id: "daily-logs",
     label: "Daily Logs",
-    href: "/devlog",
+    href: "/learn",
     group: "core",
     icon: NotebookPen,
   },
