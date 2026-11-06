@@ -11,6 +11,7 @@ import { cn } from "@/design-system";
 import { SeriesCard, toneOfIndex } from "@/features/study-lists";
 import { CarouselArrow, CarouselDots } from "./CarouselControls";
 import {
+  CARD_SCALE,
   cardHeightOf,
   cardWidthOf,
   modeOf,
@@ -118,12 +119,13 @@ export function SeriesCarousel({ series }: SeriesCarouselProps) {
           onClickCapture={handleClickCapture}
           // A link dragged by the browser would cancel the drag of the cards.
           onDragStart={(event) => event.preventDefault()}
-          style={{ height: cardHeight + 64 }}
+          style={{ height: Math.round(cardHeight * CARD_SCALE) + 64 }}
           className="relative touch-pan-y select-none [perspective-origin:50%_45%] [perspective:1400px]"
         >
           {series.map((item, index) => {
             const offset = offsetOf(index, active, series.length);
-            const pose = poseOf(offset, cardWidth, mode);
+            // The spacing follows the width the card is drawn at, so smaller cards stand closer.
+            const pose = poseOf(offset, cardWidth * CARD_SCALE, mode);
             const isActive = offset === 0;
             const isVisible = Math.abs(offset) <= radius;
             return (
@@ -134,7 +136,7 @@ export function SeriesCarousel({ series }: SeriesCarouselProps) {
                   x: pose.x,
                   y: pose.y,
                   z: pose.z,
-                  scale: pose.scale,
+                  scale: pose.scale * CARD_SCALE,
                   rotateY: pose.rotateY,
                   rotateZ: pose.rotateZ,
                   opacity: pose.opacity,

@@ -48,7 +48,7 @@ function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
         onChange={(event) =>
           updateAttributes({ language: event.target.value || null })
         }
-        className="absolute top-2 right-2 z-[1] h-8 max-w-40 cursor-pointer rounded-sharp border-2 border-border-strong bg-surface-card px-1.5 font-sans text-xs font-semibold text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus"
+        className="absolute top-2 right-2 z-[1] h-8 max-w-40 cursor-pointer rounded-sharp border border-border-subtle bg-surface-card px-1.5 font-sans text-[14px] text-text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-border-focus"
       >
         <option value="">Tự nhận diện</option>
         {/* A language that is not in the list (e.g. pasted) stays selectable. */}

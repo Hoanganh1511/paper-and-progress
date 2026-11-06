@@ -57,7 +57,10 @@ export interface CardPose {
 }
 
 /** Sideways distance of the card at each place, as a share of the card's width. */
-const SPREAD = [0, 0.84, 1.3, 1.7] as const;
+const SPREAD = [0, 0.74, 1.15, 1.5] as const;
+
+/** Every card is drawn this much smaller than its box (the box keeps the room its content needs). */
+export const CARD_SCALE = 0.8;
 
 /**
  * The pose of the card that is `offset` places from the active one. It only

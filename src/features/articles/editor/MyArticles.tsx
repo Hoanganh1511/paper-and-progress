@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Archive, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Archive, Columns2, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   Alert,
   AlertDialog,
   Badge,
+  Button,
   EmptyState,
   IconButton,
   Skeleton,
@@ -29,6 +31,19 @@ export function MyArticles() {
   const [deleting, setDeleting] = useState<ArticleCardData>();
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const router = useRouter();
+  // The first article picked for side-by-side editing; the next pick opens both.
+  const [pairFirst, setPairFirst] = useState<ArticleCardData>();
+
+  function pickForPair(article: ArticleCardData) {
+    if (!pairFirst) {
+      setPairFirst(article);
+    } else if (pairFirst.id === article.id) {
+      setPairFirst(undefined);
+    } else {
+      router.push(`/write/${pairFirst.id}?with=${article.id}`);
+    }
+  }
 
   async function run(action: () => Promise<unknown>) {
     setIsBusy(true);
@@ -56,6 +71,23 @@ export function MyArticles() {
         </Link>
       </div>
       {error && <Alert variant="danger">{error}</Alert>}
+      {pairFirst && (
+        <Alert variant="info" title="Mở song song">
+          <div className="flex flex-wrap items-center gap-3">
+            <span>
+              Đã chọn “{pairFirst.title}”. Bấm “Song song” ở bài thứ hai để mở
+              cả hai cạnh nhau.
+            </span>
+            <Button
+              size="compact"
+              variant="outline"
+              onClick={() => setPairFirst(undefined)}
+            >
+              Huỷ
+            </Button>
+          </div>
+        </Alert>
+      )}
       {mine.error && !mine.data ? (
         <Alert variant="danger">{mine.error.message}</Alert>
       ) : !mine.data ? (
@@ -106,6 +138,15 @@ export function MyArticles() {
                   <Pencil aria-hidden="true" size={16} />
                   Sửa
                 </Link>
+                <IconButton
+                  icon={Columns2}
+                  variant={pairFirst?.id === article.id ? "outline" : "ghost"}
+                  size="compact"
+                  aria-label={`Song song: ${article.title}`}
+                  aria-pressed={pairFirst?.id === article.id}
+                  title="Mở song song 2 bài để sửa"
+                  onClick={() => pickForPair(article)}
+                />
                 {article.status === "PUBLISHED" && (
                   <IconButton
                     icon={Archive}

@@ -432,22 +432,39 @@ body {
   color: var(--color-text-secondary);
 }
 .rich-text code {
-  border-radius: 4px;
-  background: var(--color-surface-sunken);
-  padding: 0.1em 0.3em;
-  font-family: var(--font-mono, monospace);
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-text-secondary) 8%, transparent);
+  color: var(--color-danger-text);
+  padding: 1px 0.3em;
+  font-family: var(--font-mono, ui-monospace, "Cascadia Code", Consolas, monospace);
   font-size: 0.9em;
+  /* Follows the text around it: bold inside <strong> and headings. */
+  font-weight: inherit;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .rich-text pre {
   overflow-x: auto;
-  border: 2px solid var(--color-border-strong);
+  border: 0.5px solid var(--color-border-subtle);
   border-radius: 8px;
-  background: var(--color-surface-sunken);
-  padding: 0.75em;
+  background: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-surface-card));
+  padding: 1em 1.25em;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.rich-text pre code,
+.rich-text pre [data-node-view-content-react] {
+  font-family: var(--font-mono, ui-monospace, "Cascadia Code", Consolas, monospace);
+  font-size: 14px;
 }
 .rich-text pre code {
+  border: 0;
+  border-radius: 0;
   background: none;
+  color: inherit;
   padding: 0;
+  font-weight: inherit;
 }
 .rich-text hr {
   border: 0;
@@ -511,7 +528,6 @@ body {
 .rich-text .hljs-doctag,
 .rich-text .hljs-section {
   color: var(--color-info-text);
-  font-weight: 700;
 }
 .rich-text .hljs-string,
 .rich-text .hljs-attr,
