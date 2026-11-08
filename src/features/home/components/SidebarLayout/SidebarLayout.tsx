@@ -32,7 +32,7 @@ export function SidebarLayout({
       className={cn("px-4 py-8 outline-none sm:px-6 md:py-10", className)}
       {...props}
     >
-      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-x-10 xl:gap-x-12">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-x-10 xl:gap-x-12">
         {sidebar}
         <div className="min-w-0">{children}</div>
       </div>
