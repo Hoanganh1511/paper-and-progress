@@ -25,8 +25,8 @@ describe("modeOf, radiusOf and cardWidthOf", () => {
   });
 
   it("keeps a card readable: wide at the top, never wider than the stage when narrow", () => {
-    expect(cardWidthOf(1400)).toBe(420);
-    expect(cardWidthOf(800)).toBeLessThanOrEqual(420);
+    expect(cardWidthOf(1400)).toBe(520);
+    expect(cardWidthOf(800)).toBeLessThanOrEqual(480);
     expect(cardWidthOf(375)).toBeLessThan(375);
     expect(cardWidthOf(300)).toBeGreaterThanOrEqual(260);
   });

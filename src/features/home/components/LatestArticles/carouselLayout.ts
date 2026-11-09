@@ -21,8 +21,8 @@ export const radiusOf = (mode: StageMode): number =>
 /** The width of a card, from the width of the stage. */
 export function cardWidthOf(stageWidth: number): number {
   const mode = modeOf(stageWidth);
-  if (mode === "wide") return 420;
-  if (mode === "medium") return Math.min(420, Math.round(stageWidth * 0.56));
+  if (mode === "wide") return 520;
+  if (mode === "medium") return Math.min(480, Math.round(stageWidth * 0.64));
   return Math.max(260, Math.min(400, stageWidth - 64));
 }
 

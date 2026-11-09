@@ -1,4 +1,5 @@
 import { ArticleEditorPage } from "@/features/articles/editor/ArticleEditorPage";
+import { StudySeriesNav } from "@/features/articles/editor/StudySeriesNav";
 import { SplitArticleEditors } from "@/features/articles/editor/SplitArticleEditors";
 
 export default async function EditArticlePage({
@@ -11,5 +12,10 @@ export default async function EditArticlePage({
   if (rightId) {
     return <SplitArticleEditors leftId={id} rightId={rightId} />;
   }
-  return <ArticleEditorPage id={id} />;
+  return (
+    <StudySeriesNav articleId={id}>
+      {/* The id is the key: another lesson starts its editor over. */}
+      <ArticleEditorPage key={id} id={id} />
+    </StudySeriesNav>
+  );
 }

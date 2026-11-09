@@ -15,6 +15,10 @@ export default async function NewArticlePage({
   const sectionId = first(params.section);
   return (
     <ArticleEditorPage
+      // A fresh key for every visit. The first save moves the address to the
+      // new article without leaving this page, so without it a later visit to
+      // "new article" would reuse the editor, and its fields, of the last one.
+      key={crypto.randomUUID()}
       addToSection={listId && sectionId ? { listId, sectionId } : undefined}
     />
   );

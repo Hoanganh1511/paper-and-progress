@@ -27,6 +27,20 @@ const SWIPE_PX = 60;
 const EASE = [0.22, 1, 0.36, 1] as const;
 const MOVE_SECONDS = 0.65;
 
+/**
+ * A stacked hard shadow (ink slab, then a lighter one) that falls away from the
+ * stage's centre, so a card behind looks like a thick slab turned in space.
+ * The front card's falls straight down and to the right.
+ */
+function shadowOf(offset: number): string {
+  // Whole class names, so Tailwind can see them.
+  if (offset === 0)
+    return "shadow-[8px_10px_0_0_var(--color-border-strong),16px_20px_0_0_rgba(23,23,23,0.16)] hover:shadow-[8px_10px_0_0_var(--color-border-strong),16px_20px_0_0_rgba(23,23,23,0.16)]";
+  return offset > 0
+    ? "shadow-[12px_8px_0_0_var(--color-border-strong),24px_16px_0_0_rgba(23,23,23,0.16)] hover:shadow-[12px_8px_0_0_var(--color-border-strong),24px_16px_0_0_rgba(23,23,23,0.16)]"
+    : "shadow-[-12px_8px_0_0_var(--color-border-strong),-24px_16px_0_0_rgba(23,23,23,0.16)] hover:shadow-[-12px_8px_0_0_var(--color-border-strong),-24px_16px_0_0_rgba(23,23,23,0.16)]";
+}
+
 export interface SeriesCarouselProps {
   series: SeriesShowcase[];
 }
@@ -171,6 +185,7 @@ export function SeriesCarousel({ series }: SeriesCarouselProps) {
                     showCertificates={false}
                     className={cn(
                       "h-full w-full",
+                      shadowOf(offset),
                       !isActive && "brightness-95",
                     )}
                   />
