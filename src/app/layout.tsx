@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
@@ -7,6 +6,7 @@ import { SkipLink, ThemeScript, ToastProvider } from "@/design-system";
 import { AuthProvider, SessionHeader } from "@/features/auth";
 import { AppFooter } from "@/features/footer";
 import { DailyGateLauncher } from "@/features/daily-gate";
+import { DevTodoLoader } from "./DevTodoLoader";
 import { RouterLinks } from "./RouterLinks";
 import "./globals.css";
 
@@ -20,15 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Developer progress tracker. NODE_ENV is inlined at build time, so in a
-// production build the ternary collapses and the import() below, and with it
-// the whole widget, is left out of the bundle (a plain `import` would keep it).
-const DevTodoWidget =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() =>
-        import("@/features/dev-todos").then((module) => module.DevTodoWidget),
-      )
-    : null;
+const HAS_DEV_TODO = process.env.NODE_ENV === "development";
 
 // Placeholder values until the header is fed by the signed-in user's data
 // (score, unread count); the user itself comes from the signed-in session and the footer links point at the real pages.
@@ -96,12 +88,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               />
               {/* Opens the Daily English Gate; stacks above the dev todo button in development. */}
               <Suspense fallback={null}>
-                <DailyGateLauncher hasDevTodo={DevTodoWidget !== null} />
+                <DailyGateLauncher hasDevTodo={HAS_DEV_TODO} />
               </Suspense>
             </RouterLinks>
           </AuthProvider>
         </ToastProvider>
-        {DevTodoWidget && <DevTodoWidget />}
+        <DevTodoLoader />
       </body>
     </html>
   );

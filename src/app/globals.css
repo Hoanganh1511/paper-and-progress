@@ -446,9 +446,10 @@ body {
 }
 .rich-text pre {
   overflow-x: auto;
-  border: 0.5px solid var(--color-border-subtle);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-surface-card));
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-standard);
+  box-shadow: var(--shadow-raised);
+  background: var(--color-surface-card);
   padding: 1em 1.25em;
   font-size: 14px;
   line-height: 1.6;
@@ -524,7 +525,6 @@ body {
 .rich-text .hljs-keyword,
 .rich-text .hljs-selector-tag,
 .rich-text .hljs-built_in,
-.rich-text .hljs-name,
 .rich-text .hljs-doctag,
 .rich-text .hljs-section {
   color: var(--color-info-text);
@@ -540,6 +540,7 @@ body {
 .rich-text .hljs-number,
 .rich-text .hljs-literal,
 .rich-text .hljs-title,
+.rich-text .hljs-name,
 .rich-text .hljs-function,
 .rich-text .hljs-type,
 .rich-text .hljs-class,
@@ -601,4 +602,66 @@ body {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
+}
+
+/* Code coloured by Shiki: every token carries a light and a dark colour as CSS
+   variables, and the page picks the pair that matches its theme. */
+.rich-text pre span[style*="--shiki-light"] {
+  color: var(--shiki-light);
+}
+:root[data-theme="dark"] .rich-text pre span[style*="--shiki-light"] {
+  color: var(--shiki-dark);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rich-text pre span[style*="--shiki-light"] {
+    color: var(--shiki-dark);
+  }
+}
+
+/* The reader wraps each code block in a bar with the language and a copy button. */
+.rich-text .code-block {
+  margin-block: 1.25em;
+  overflow: hidden;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-standard);
+  box-shadow: var(--shadow-raised);
+}
+.rich-text .code-block > pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.rich-text .code-block-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  padding: 0.25rem 0.5rem 0.25rem 1rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono, ui-monospace, "Cascadia Code", Consolas, monospace);
+  font-size: 13px;
+}
+.rich-text .code-block-copy {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: var(--radius-standard);
+  padding: 0 0.5rem;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+.rich-text .code-block-copy:hover {
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
+}
+.rich-text .code-block-copy:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }

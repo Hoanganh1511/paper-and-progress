@@ -8,7 +8,7 @@ import { getEditable } from "../articlesApi";
 import type { EditableArticle } from "../types";
 import type { StudySectionTarget } from "./StudySectionBanner";
 
-// TipTap and lowlight are heavy and only this page needs them.
+// TipTap and Shiki are heavy and only this page needs them.
 const ArticleEditor = dynamic(
   () => import("./ArticleEditor").then((module) => module.ArticleEditor),
   {

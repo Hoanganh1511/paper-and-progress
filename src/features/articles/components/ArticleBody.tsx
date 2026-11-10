@@ -1,4 +1,5 @@
 import { addHeadingIds } from "../toc";
+import { CodeBlockEnhancer } from "./CodeBlockEnhancer";
 
 export interface ArticleBodyProps {
   /** HTML the backend has already sanitized. Never pass anything else here. */
@@ -12,9 +13,12 @@ export interface ArticleBodyProps {
  */
 export function ArticleBody({ html, className }: ArticleBodyProps) {
   return (
-    <div
-      className={`rich-text text-body-lg ${className ?? ""}`}
-      dangerouslySetInnerHTML={{ __html: addHeadingIds(html) }}
-    />
+    <>
+      <div
+        className={`rich-text text-body-lg ${className ?? ""}`}
+        dangerouslySetInnerHTML={{ __html: addHeadingIds(html) }}
+      />
+      <CodeBlockEnhancer htmlKey={html} />
+    </>
   );
 }
